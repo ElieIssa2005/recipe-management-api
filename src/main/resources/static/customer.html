@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recipe Browser - Customer View</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Arial', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #0f2447 0%, #1a3a6e 100%);
+      min-height: 100vh;
+      color: #ffffff;
+      font-weight: 300;
+    }
+
+    .header {
+      background: rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(10px);
+      padding: 20px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 90%;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .logo {
+      font-size: 1.8rem;
+      font-weight: 300;
+      letter-spacing: 1px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 20px;
+    }
+
+    .nav-link {
+      color: white;
+      text-decoration: none;
+      opacity: 0.8;
+      transition: opacity 0.3s;
+    }
+
+    .nav-link:hover {
+      opacity: 1;
+    }
+
+    .container {
+      width: 90%;
+      max-width: 1200px;
+      margin: 40px auto;
+      padding-bottom: 50px;
+    }
+
+    h1, h2, h3 {
+      font-weight: 300;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .search-filters {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 30px;
+    }
+
+    .filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    .filter-group {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 0.9rem;
+    }
+
+    button {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 10px 20px;
+      border-radius: 5px;
+      color: white;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    button:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .search-button {
+      align-self: flex-end;
+      margin-top: 24px;
+    }
+
+    /* Recipe Grid */
+    .recipe-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 25px;
+    }
+
+    .recipe-card {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(5px);
+      border-radius: 10px;
+      overflow: hidden;
+      transition: transform 0.3s;
+    }
+
+    .recipe-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .recipe-image {
+      height: 180px;
+      background: #2c5282;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+    }
+
+    .recipe-content {
+      padding: 20px;
+    }
+
+    .recipe-title {
+      font-size: 1.3rem;
+      font-weight: 400;
+      margin-bottom: 10px;
+    }
+
+    .recipe-category {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      margin-bottom: 15px;
+    }
+
+    .recipe-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      opacity: 0.8;
+      margin-bottom: 15px;
+    }
+
+    .view-button {
+      width: 100%;
+      text-align: center;
+    }
+
+    /* Recipe Detail Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-content {
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      border-radius: 15px;
+      width: 90%;
+      max-width: 800px;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+      padding: 30px;
+    }
+
+    .close-button {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: rgba(255, 255, 255, 0.7);
+      transition: color 0.3s;
+    }
+
+    .close-button:hover {
+      color: #ffffff;
+    }
+
+    .recipe-detail-title {
+      font-size: 2rem;
+      margin-bottom: 15px;
+    }
+
+    .recipe-detail-meta {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 25px;
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+
+    .recipe-detail-section {
+      margin-bottom: 30px;
+    }
+
+    .recipe-detail-section h3 {
+      font-size: 1.3rem;
+      margin-bottom: 15px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      padding-bottom: 5px;
+    }
+
+    .ingredients-list {
+      list-style-position: inside;
+      margin-bottom: 20px;
+    }
+
+    .ingredients-list li {
+      margin-bottom: 8px;
+    }
+
+    .instructions {
+      line-height: 1.6;
+      white-space: pre-line;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 50px;
+      font-style: italic;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .no-results {
+      text-align: center;
+      padding: 50px;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .filter-row {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .search-button {
+        margin-top: 10px;
+        align-self: stretch;
+      }
+
+      .recipe-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+<header class="header">
+  <div class="header-content">
+    <div class="logo">Recipe Browser</div>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="#" class="nav-link" id="about-link">About</a>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <h1>Discover Delicious Recipes</h1>
+
+  <div class="search-filters">
+    <div class="filter-row">
+      <div class="filter-group">
+        <label for="title-search">Recipe Title</label>
+        <input type="text" id="title-search" placeholder="Search recipes...">
+      </div>
+
+      <div class="filter-group">
+        <label for="category-filter">Category</label>
+        <select id="category-filter">
+          <option value="">All Categories</option>
+          <!-- Categories will be loaded dynamically -->
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="cooking-time">Max Cooking Time (minutes)</label>
+        <input type="number" id="cooking-time" min="1" placeholder="e.g. 30">
+      </div>
+
+      <div class="filter-group">
+        <label for="ingredient-search">Ingredient</label>
+        <input type="text" id="ingredient-search" placeholder="e.g. tomato">
+      </div>
+
+      <button id="search-button" class="search-button">Search Recipes</button>
+    </div>
+  </div>
+
+  <div id="recipe-grid" class="recipe-grid">
+    <!-- Recipe cards will be loaded here -->
+  </div>
+
+  <div id="loading" class="loading">Loading recipes...</div>
+  <div id="no-results" class="no-results" style="display: none;">No recipes found matching your criteria.</div>
+</div>
+
+<!-- Recipe Detail Modal -->
+<div class="modal" id="recipe-modal">
+  <div class="modal-content">
+    <span class="close-button" id="close-recipe-modal">&times;</span>
+
+    <h2 id="recipe-detail-title" class="recipe-detail-title">Recipe Title</h2>
+
+    <div class="recipe-detail-meta">
+      <div id="recipe-detail-category">Category: <span></span></div>
+      <div id="recipe-detail-time">Cooking Time: <span></span> minutes</div>
+    </div>
+
+    <div class="recipe-detail-section">
+      <h3>Ingredients</h3>
+      <ul id="recipe-detail-ingredients" class="ingredients-list">
+        <!-- Ingredients will be loaded here -->
+      </ul>
+    </div>
+
+    <div class="recipe-detail-section">
+      <h3>Instructions</h3>
+      <div id="recipe-detail-instructions" class="instructions">
+        <!-- Instructions will be loaded here -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // DOM Elements
+  const categoryFilter = document.getElementById('category-filter');
+  const searchButton = document.getElementById('search-button');
+  const recipeGrid = document.getElementById('recipe-grid');
+  const loadingElement = document.getElementById('loading');
+  const noResultsElement = document.getElementById('no-results');
+  const recipeModal = document.getElementById('recipe-modal');
+  const closeRecipeModal = document.getElementById('close-recipe-modal');
+
+  // API base URL - change this to match your deployment
+  const API_URL = 'http://recipe-management-api.onrender.com';
+
+  // Load data when page loads
+  document.addEventListener('DOMContentLoaded', () => {
+    fetchCategories();
+    fetchRecipes();
+  });
+
+  // Event Listeners
+  searchButton.addEventListener('click', searchRecipes);
+
+  closeRecipeModal.addEventListener('click', () => {
+    recipeModal.style.display = 'none';
+  });
+
+  // Close modal when clicking outside
+  window.addEventListener('click', (event) => {
+    if (event.target === recipeModal) {
+      recipeModal.style.display = 'none';
+    }
+  });
+
+  // Fetch all recipe categories
+  async function fetchCategories() {
+    try {
+      const response = await fetch(`${API_URL}/api/recipes/categories`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch categories');
+      }
+
+      const categories = await response.json();
+
+      // Populate category filter
+      categories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category;
+        option.textContent = category;
+        categoryFilter.appendChild(option);
+      });
+
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  }
+
+  // Fetch all recipes or filtered recipes
+  async function fetchRecipes() {
+    showLoading();
+
+    try {
+      const response = await fetch(`${API_URL}/api/recipes`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch recipes');
+      }
+
+      const recipes = await response.json();
+      displayRecipes(recipes);
+
+    } catch (error) {
+      console.error('Error fetching recipes:', error);
+      showNoResults();
+    }
+  }
+
+  // Search recipes with filters
+  async function searchRecipes() {
+    showLoading();
+
+    const title = document.getElementById('title-search').value;
+    const category = document.getElementById('category-filter').value;
+    const cookingTime = document.getElementById('cooking-time').value;
+    const ingredient = document.getElementById('ingredient-search').value;
+
+    // Build query string
+    let queryParams = new URLSearchParams();
+    if (title) queryParams.append('title', title);
+    if (category) queryParams.append('category', category);
+    if (cookingTime) queryParams.append('maxCookingTime', cookingTime);
+    if (ingredient) queryParams.append('ingredient', ingredient);
+
+    try {
+      const url = `${API_URL}/api/recipes/search/advanced?${queryParams.toString()}`;
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error('Search failed');
+      }
+
+      const recipes = await response.json();
+      displayRecipes(recipes);
+
+    } catch (error) {
+      console.error('Error searching recipes:', error);
+      showNoResults();
+    }
+  }
+
+  // Display recipes in grid
+  function displayRecipes(recipes) {
+    recipeGrid.innerHTML = '';
+
+    if (recipes.length === 0) {
+      showNoResults();
+      return;
+    }
+
+    hideLoading();
+    noResultsElement.style.display = 'none';
+
+    recipes.forEach(recipe => {
+      const card = createRecipeCard(recipe);
+      recipeGrid.appendChild(card);
+    });
+  }
+
+  // Create a recipe card element
+  function createRecipeCard(recipe) {
+    const card = document.createElement('div');
+    card.className = 'recipe-card';
+
+    card.innerHTML = `
+                <div class="recipe-image">🍳</div>
+                <div class="recipe-content">
+                    <h3 class="recipe-title">${recipe.title}</h3>
+                    <div class="recipe-category">${recipe.category || 'Uncategorized'}</div>
+                    <div class="recipe-info">
+                        <div>Cooking Time: ${recipe.cookingTime} min</div>
+                        <div>${recipe.ingredients.length} ingredients</div>
+                    </div>
+                    <button class="view-button">View Recipe</button>
+                </div>
+            `;
+
+    // Add event listener to view button
+    card.querySelector('.view-button').addEventListener('click', () => {
+      showRecipeDetails(recipe);
+    });
+
+    return card;
+  }
+
+  // Show recipe details in modal
+  function showRecipeDetails(recipe) {
+    document.getElementById('recipe-detail-title').textContent = recipe.title;
+    document.getElementById('recipe-detail-category').querySelector('span').textContent = recipe.category || 'Uncategorized';
+    document.getElementById('recipe-detail-time').querySelector('span').textContent = recipe.cookingTime;
+
+    // Populate ingredients
+    const ingredientsList = document.getElementById('recipe-detail-ingredients');
+    ingredientsList.innerHTML = '';
+    recipe.ingredients.forEach(ingredient => {
+      const li = document.createElement('li');
+      li.textContent = ingredient;
+      ingredientsList.appendChild(li);
+    });
+
+    // Set instructions
+    document.getElementById('recipe-detail-instructions').textContent = recipe.instructions;
+
+    // Show modal
+    recipeModal.style.display = 'flex';
+  }
+
+  // Helper functions
+  function showLoading() {
+    loadingElement.style.display = 'block';
+    recipeGrid.innerHTML = '';
+    noResultsElement.style.display = 'none';
+  }
+
+  function hideLoading() {
+    loadingElement.style.display = 'none';
+  }
+
+  function showNoResults() {
+    hideLoading();
+    recipeGrid.innerHTML = '';
+    noResultsElement.style.display = 'block';
+  }
+</script>
+</body>
+</html>

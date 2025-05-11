@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recipe Management - Chef Portal</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Arial', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #0f2447 0%, #1a3a6e 100%);
+      min-height: 100vh;
+      color: #ffffff;
+      font-weight: 300;
+    }
+
+    .header {
+      background: rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(10px);
+      padding: 20px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 90%;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .logo {
+      font-size: 1.8rem;
+      font-weight: 300;
+      letter-spacing: 1px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .nav-link {
+      color: white;
+      text-decoration: none;
+      opacity: 0.8;
+      transition: opacity 0.3s;
+    }
+
+    .nav-link:hover {
+      opacity: 1;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .username {
+      font-size: 0.9rem;
+    }
+
+    .logout-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 5px 10px;
+      border-radius: 5px;
+      color: white;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .logout-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .container {
+      width: 90%;
+      max-width: 1200px;
+      margin: 40px auto;
+      padding-bottom: 50px;
+    }
+
+    h1, h2, h3 {
+      font-weight: 300;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 30px;
+    }
+
+    .dashboard-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+
+    .stat-card {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(5px);
+      border-radius: 10px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 2.5rem;
+      margin: 10px 0;
+    }
+
+    .stat-label {
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .action-button {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 10px 20px;
+      border-radius: 5px;
+      color: white;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .action-button:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .tab-buttons {
+      display: flex;
+      margin-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .tab-button {
+      background: none;
+      border: none;
+      padding: 10px 20px;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      opacity: 0.7;
+      transition: all 0.3s;
+      position: relative;
+    }
+
+    .tab-button.active {
+      opacity: 1;
+    }
+
+    .tab-button.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: white;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Table Styles */
+    .recipe-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 30px;
+    }
+
+    .recipe-table th,
+    .recipe-table td {
+      padding: 15px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .recipe-table th {
+      background: rgba(0, 0, 0, 0.2);
+      font-weight: 400;
+    }
+
+    .recipe-table tbody tr {
+      background: rgba(255, 255, 255, 0.05);
+      transition: background 0.3s;
+    }
+
+    .recipe-table tbody tr:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .table-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .table-action-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      padding: 5px 10px;
+      border-radius: 3px;
+      color: white;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: background 0.3s;
+    }
+
+    .table-action-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .delete-btn {
+      background: rgba(220, 53, 69, 0.2);
+    }
+
+    .delete-btn:hover {
+      background: rgba(220, 53, 69, 0.3);
+    }
+
+    /* Form Styles */
+    .recipe-form {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(5px);
+      border-radius: 10px;
+      padding: 30px;
+      margin-bottom: 30px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 0.9rem;
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    button {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 12px 20px;
+      border-radius: 5px;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    button:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .form-buttons {
+      display: flex;
+      gap: 15px;
+    }
+
+    .cancel-btn {
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .cancel-btn:hover {
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    /* Ingredient management */
+    .ingredients-container {
+      margin-bottom: 15px;
+    }
+
+    .ingredient-row {
+      display: flex;
+      margin-bottom: 10px;
+      gap: 10px;
+    }
+
+    .ingredient-row input {
+      flex-grow: 1;
+    }
+
+    .remove-ingredient {
+      background: rgba(220, 53, 69, 0.2);
+      padding: 12px;
+      width: auto;
+    }
+
+    .remove-ingredient:hover {
+      background: rgba(220, 53, 69, 0.3);
+    }
+
+    .add-ingredient {
+      background: rgba(25, 135, 84, 0.2);
+      margin-bottom: 20px;
+    }
+
+    .add-ingredient:hover {
+      background: rgba(25, 135, 84, 0.3);
+    }
+
+    /* Alert messages */
+    .alert {
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      animation: fadeIn 0.3s;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .alert-success {
+      background: rgba(25, 135, 84, 0.2);
+      border: 1px solid rgba(25, 135, 84, 0.4);
+    }
+
+    .alert-error {
+      background: rgba(220, 53, 69, 0.2);
+      border: 1px solid rgba(220, 53, 69, 0.4);
+    }
+
+    .loading {
+      text-align: center;
+      padding: 50px;
+      font-style: italic;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .dashboard-stats {
+        grid-template-columns: 1fr;
+      }
+
+      .action-buttons {
+        flex-direction: column;
+      }
+
+      .header-content {
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .tab-buttons {
+        overflow-x: auto;
+        white-space: nowrap;
+        padding-bottom: 5px;
+      }
+
+      .recipe-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+
+      .form-buttons {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+<header class="header">
+  <div class="header-content">
+    <div class="logo">Chef Portal</div>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link">Home</a>
+      <div class="user-info">
+        <span class="username" id="username-display">Chef</span>
+        <button class="logout-btn" id="logout-button">Logout</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <h1>Recipe Management Dashboard</h1>
+
+  <!-- Dashboard Stats -->
+  <div class="dashboard-stats">
+    <div class="stat-card">
+      <div class="stat-value" id="total-recipes">0</div>
+      <div class="stat-label">Total Recipes</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="total-categories">0</div>
+      <div class="stat-label">Categories</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="my-recipes">0</div>
+      <div class="stat-label">My Recipes</div>
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="action-buttons">
+    <button class="action-button" id="new-recipe-btn">Add New Recipe</button>
+    <button class="action-button" id="refresh-btn">Refresh Data</button>
+  </div>
+
+  <!-- Alert Messages -->
+  <div id="alert-container"></div>
+
+  <!-- Tab Navigation -->
+  <div class="tab-buttons">
+    <button class="tab-button active" data-tab="all-recipes">All Recipes</button>
+    <button class="tab-button" data-tab="my-recipes">My Recipes</button>
+    <button class="tab-button" data-tab="add-recipe">Add Recipe</button>
+  </div>
+
+  <!-- Tab Content: All Recipes -->
+  <div class="tab-content active" id="all-recipes">
+    <div id="all-recipes-loading" class="loading">Loading recipes...</div>
+    <table class="recipe-table" id="all-recipes-table" style="display: none;">
+      <thead>
+      <tr>
+        <th>Title</th>
+        <th>Category</th>
+        <th>Cooking Time</th>
+        <th>Created By</th>
+        <th>Actions</th>
+      </tr>
+      </thead>
+      <tbody>
+      <!-- Recipe rows will be loaded dynamically -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Tab Content: My Recipes -->
+  <div class="tab-content" id="my-recipes-tab">
+    <div id="my-recipes-loading" class="loading">Loading your recipes...</div>
+    <table class="recipe-table" id="my-recipes-table" style="display: none;">
+      <thead>
+      <tr>
+        <th>Title</th>
+        <th>Category</th>
+        <th>Cooking Time</th>
+        <th>Actions</th>
+      </tr>
+      </thead>
+      <tbody>
+      <!-- My recipe rows will be loaded dynamically -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Tab Content: Add Recipe Form -->
+  <div class="tab-content" id="add-recipe">
+    <form id="recipe-form" class="recipe-form">
+      <input type="hidden" id="recipe-id">
+      <div class="form-group">
+        <label for="title">Recipe Title</label>
+        <input type="text" id="title" name="title" required>
+      </div>
+
+      <div class="form-group">
+        <label for="category">Category</label>
+        <input type="text" id="category" name="category" required>
+      </div>
+
+      <div class="form-group">
+        <label for="cooking-time">Cooking Time (minutes)</label>
+        <input type="number" id="cooking-time" name="cookingTime" min="1" required>
+      </div>
+
+      <div class="form-group">
+        <label>Ingredients</label>
+        <div id="ingredients-container" class="ingredients-container">
+          <div class="ingredient-row">
+            <input type="text" name="ingredient" placeholder="e.g. 2 cups flour" required>
+            <button type="button" class="remove-ingredient">×</button>
+          </div>
+        </div>
+        <button type="button" id="add-ingredient" class="add-ingredient">Add Ingredient</button>
+      </div>
+
+      <div class="form-group">
+        <label for="instructions">Instructions</label>
+        <textarea id="instructions" name="instructions" required></textarea>
+      </div>
+
+      <div class="form-buttons">
+        <button type="submit" id="save-recipe">Save Recipe</button>
+        <button type="button" id="cancel-form" class="cancel-btn">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // DOM Elements
+  const usernameDisplay = document.getElementById('username-display');
+  const logoutButton = document.getElementById('logout-button');
+  const tabButtons = document.querySelectorAll('.tab-button');
+  const tabContents = document.querySelectorAll('.tab-content');
+  const newRecipeBtn = document.getElementById('new-recipe-btn');
+  const refreshBtn = document.getElementById('refresh-btn');
+  const recipeForm = document.getElementById('recipe-form');
+  const addIngredientBtn = document.getElementById('add-ingredient');
+  const cancelFormBtn = document.getElementById('cancel-form');
+
+  // Stats elements
+  const totalRecipesElement = document.getElementById('total-recipes');
+  const totalCategoriesElement = document.getElementById('total-categories');
+  const myRecipesElement = document.getElementById('my-recipes');
+
+  // Tables
+  const allRecipesTable = document.getElementById('all-recipes-table');
+  const myRecipesTable = document.getElementById('my-recipes-table');
+  const allRecipesLoading = document.getElementById('all-recipes-loading');
+  const myRecipesLoading = document.getElementById('my-recipes-loading');
+
+  // API Configuration
+  const API_URL = 'http://recipe-management-api.onrender.com';
+  let authToken = localStorage.getItem('auth_token');
+  let currentUser = localStorage.getItem('username');
+
+  // Check if user is authenticated
+  if (!authToken || !currentUser) {
+    window.location.href = 'index.html';
+  }
+
+  // Initialize the application
+  document.addEventListener('DOMContentLoaded', initialize);
+
+  function initialize() {
+    // Set username in header
+    usernameDisplay.textContent = currentUser;
+
+    // Load data
+    fetchAllRecipes();
+    fetchMyRecipes();
+    fetchCategories();
+
+    // Set up event listeners
+    setupEventListeners();
+  }
+
+  function setupEventListeners() {
+    // Tab switching
+    tabButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        const tabId = button.getAttribute('data-tab');
+        switchTab(tabId);
+      });
+    });
+
+    // New recipe button
+    newRecipeBtn.addEventListener('click', () => {
+      switchTab('add-recipe');
+      recipeForm.reset();
+      document.getElementById('recipe-id').value = '';
+    });
+
+    // Refresh button
+    refreshBtn.addEventListener('click', () => {
+      fetchAllRecipes();
+      fetchMyRecipes();
+      fetchCategories();
+    });
+
+    // Logout button
+    logoutButton.addEventListener('click', handleLogout);
+
+    // Recipe form
+    recipeForm.addEventListener('submit', handleRecipeSubmit);
+
+    // Add ingredient button
+    addIngredientBtn.addEventListener('click', addIngredientField);
+
+    // Cancel form button
+    cancelFormBtn.addEventListener('click', () => {
+      switchTab('all-recipes');
+    });
+
+    // Set up ingredient removal
+    setupIngredientRemoval();
+  }
+
+  function switchTab(tabId) {
+    // Update active tab button
+    tabButtons.forEach(button => {
+      if (button.getAttribute('data-tab') === tabId) {
+        button.classList.add('active');
+      } else {
+        button.classList.remove('active');
+      }
+    });
+
+    // Show active tab content
+    tabContents.forEach(content => {
+      if (content.id === tabId) {
+        content.classList.add('active');
+      } else {
+        content.classList.remove('active');
+      }
+    });
+  }
+
+  function handleLogout() {
+    // Clear authentication data
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('username');
+
+    // Redirect to login page
+    window.location.href = 'index.html';
+  }
+
+  // API Functions
+  async function fetchAllRecipes() {
+    allRecipesLoading.style.display = 'block';
+    allRecipesTable.style.display = 'none';
+
+    try {
+      const response = await fetch(`${API_URL}/api/recipes`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          handleLogout();
+          return;
+        }
+        throw new Error('Failed to fetch recipes');
+      }
+
+      const recipes = await response.json();
+
+      // Update stats
+      totalRecipesElement.textContent = recipes.length;
+
+      // Populate table
+      const tableBody = allRecipesTable.querySelector('tbody');
+      tableBody.innerHTML = '';
+
+      recipes.forEach(recipe => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+                        <td>${recipe.title}</td>
+                        <td>${recipe.category || 'Uncategorized'}</td>
+                        <td>${recipe.cookingTime} minutes</td>
+                        <td>${recipe.createdBy}</td>
+                        <td class="table-actions">
+                            <button class="table-action-btn view-btn" data-id="${recipe.id}">View</button>
+                            <button class="table-action-btn edit-btn" data-id="${recipe.id}">Edit</button>
+                            <button class="table-action-btn delete-btn" data-id="${recipe.id}">Delete</button>
+                        </td>
+                    `;
+
+        tableBody.appendChild(row);
+      });
+
+      // Add event listeners to action buttons
+      tableBody.querySelectorAll('.view-btn').forEach(btn => {
+        btn.addEventListener('click', () => viewRecipe(btn.getAttribute('data-id')));
+      });
+
+      tableBody.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', () => editRecipe(btn.getAttribute('data-id')));
+      });
+
+      tableBody.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', () => deleteRecipe(btn.getAttribute('data-id')));
+      });
+
+      allRecipesLoading.style.display = 'none';
+      allRecipesTable.style.display = 'table';
+
+    } catch (error) {
+      console.error('Error fetching recipes:', error);
+      showAlert('Failed to load recipes. Please try again.', 'error');
+      allRecipesLoading.style.display = 'none';
+    }
+  }
+
+  async function fetchMyRecipes() {
+    myRecipesLoading.style.display = 'block';
+    myRecipesTable.style.display = 'none';
+
+    try {
+      const response = await fetch(`${API_URL}/api/recipes/my-recipes`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          handleLogout();
+          return;
+        }
+        throw new Error('Failed to fetch my recipes');
+      }
+
+      const recipes = await response.json();
+
+      // Update stats
+      myRecipesElement.textContent = recipes.length;
+
+      // Populate table
+      const tableBody = myRecipesTable.querySelector('tbody');
+      tableBody.innerHTML = '';
+
+      recipes.forEach(recipe => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+                        <td>${recipe.title}</td>
+                        <td>${recipe.category || 'Uncategorized'}</td>
+                        <td>${recipe.cookingTime} minutes</td>
+                        <td class="table-actions">
+                            <button class="table-action-btn view-btn" data-id="${recipe.id}">View</button>
+                            <button class="table-action-btn edit-btn" data-id="${recipe.id}">Edit</button>
+                            <button class="table-action-btn delete-btn" data-id="${recipe.id}">Delete</button>
+                        </td>
+                    `;
+
+        tableBody.appendChild(row);
+      });
+
+      // Add event listeners to action buttons
+      tableBody.querySelectorAll('.view-btn').forEach(btn => {
+        btn.addEventListener('click', () => viewRecipe(btn.getAttribute('data-id')));
+      });
+
+      tableBody.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', () => editRecipe(btn.getAttribute('data-id')));
+      });
+
+      tableBody.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', () => deleteRecipe(btn.getAttribute('data-id')));
+      });
+
+      myRecipesLoading.style.display = 'none';
+      myRecipesTable.style.display = 'table';
+
+    } catch (error) {
+      console.error('Error fetching my recipes:', error);
+      showAlert('Failed to load your recipes. Please try again.', 'error');
+      myRecipesLoading.style.display = 'none';
+    }
+  }
+
+  async function fetchCategories() {
+    try {
+      const response = await fetch(`${API_URL}/api/recipes/categories`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch categories');
+      }
+
+      const categories = await response.json();
+
+      // Update stats
+      totalCategoriesElement.textContent = categories.length;
+
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  }
+
+  async function viewRecipe(id) {
+    try {
+      const response = await fetch(`${API_URL}/api/recipes/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch recipe details');
+      }
+
+      const recipe = await response.json();
+
+      // Here you would typically show a modal with recipe details
+      // For simplicity, we'll just alert with basic info
+      alert(`Recipe: ${recipe.title}\nCategory: ${recipe.category}\nCooking Time: ${recipe.cookingTime} minutes\n\nIngredients: ${recipe.ingredients.join(', ')}\n\nInstructions: ${recipe.instructions}`);
+
+    } catch (error) {
+      console.error('Error fetching recipe details:', error);
+      showAlert('Failed to load recipe details. Please try again.', 'error');
+    }
+  }
+
+  async function editRecipe(id) {
+    try {
+      const response = await fetch(`${API_URL}/api/recipes/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch recipe details');
+      }
+
+      const recipe = await response.json();
+
+      // Populate form with recipe data
+      document.getElementById('recipe-id').value = recipe.id;
+      document.getElementById('title').value = recipe.title;
+      document.getElementById('category').value = recipe.category || '';
+      document.getElementById('cooking-time').value = recipe.cookingTime;
+      document.getElementById('instructions').value = recipe.instructions;
+
+      // Set up ingredients
+      const ingredientsContainer = document.getElementById('ingredients-container');
+      ingredientsContainer.innerHTML = '';
+
+      recipe.ingredients.forEach(ingredient => {
+        const row = document.createElement('div');
+        row.className = 'ingredient-row';
+        row.innerHTML = `
+                        <input type="text" name="ingredient" value="${ingredient}" required>
+                        <button type="button" class="remove-ingredient">×</button>
+                    `;
+        ingredientsContainer.appendChild(row);
+      });
+
+      setupIngredientRemoval();
+
+      // Switch to form tab
+      switchTab('add-recipe');
+
+    } catch (error) {
+      console.error('Error fetching recipe for editing:', error);
+      showAlert('Failed to load recipe for editing. Please try again.', 'error');
+    }
+  }
+
+  async function deleteRecipe(id) {
+    if (!confirm('Are you sure you want to delete this recipe? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/api/recipes/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete recipe');
+      }
+
+      // Refresh data
+      fetchAllRecipes();
+      fetchMyRecipes();
+
+      showAlert('Recipe deleted successfully!', 'success');
+
+    } catch (error) {
+      console.error('Error deleting recipe:', error);
+      showAlert('Failed to delete recipe. Please try again.', 'error');
+    }
+  }
+
+  async function handleRecipeSubmit(event) {
+    event.preventDefault();
+
+    const recipeId = document.getElementById('recipe-id').value;
+    const title = document.getElementById('title').value;
+    const category = document.getElementById('category').value;
+    const cookingTime = parseInt(document.getElementById('cooking-time').value);
+    const instructions = document.getElementById('instructions').value;
+
+    // Collect ingredients
+    const ingredientInputs = document.querySelectorAll('input[name="ingredient"]');
+    const ingredients = Array.from(ingredientInputs).map(input => input.value).filter(Boolean);
+
+    // Create recipe object
+    const recipe = {
+      title,
+      category,
+      cookingTime,
+      ingredients,
+      instructions
+    };
+
+    try {
+      let url = `${API_URL}/api/recipes`;
+      let method = 'POST';
+
+      // If editing existing recipe
+      if (recipeId) {
+        url = `${API_URL}/api/recipes/${recipeId}`;
+        method = 'PUT';
+      }
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify(recipe)
+      });
+
+      if (!response.ok) {
+        throw new Error('Error saving recipe');
+      }
+
+      // Success
+      recipeForm.reset();
+      document.getElementById('recipe-id').value = '';
+
+      // Reset ingredients to one empty field
+      const ingredientsContainer = document.getElementById('ingredients-container');
+      ingredientsContainer.innerHTML = `
+                    <div class="ingredient-row">
+                        <input type="text" name="ingredient" placeholder="e.g. 2 cups flour" required>
+                        <button type="button" class="remove-ingredient">×</button>
+                    </div>
+                `;
+      setupIngredientRemoval();
+
+      // Refresh data and switch to all recipes tab
+      fetchAllRecipes();
+      fetchMyRecipes();
+      switchTab('all-recipes');
+
+      showAlert(recipeId ? 'Recipe updated successfully!' : 'Recipe added successfully!', 'success');
+
+    } catch (error) {
+      console.error('Error saving recipe:', error);
+      showAlert('Failed to save recipe. Please try again.', 'error');
+    }
+  }
+
+  // Helper Functions
+  function addIngredientField() {
+    const ingredientsContainer = document.getElementById('ingredients-container');
+    const newRow = document.createElement('div');
+    newRow.className = 'ingredient-row';
+    newRow.innerHTML = `
+                <input type="text" name="ingredient" placeholder="e.g. 2 cups flour" required>
+                <button type="button" class="remove-ingredient">×</button>
+            `;
+    ingredientsContainer.appendChild(newRow);
+    setupIngredientRemoval();
+  }
+
+  function setupIngredientRemoval() {
+    const removeButtons = document.querySelectorAll('.remove-ingredient');
+    removeButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        const ingredientsContainer = document.getElementById('ingredients-container');
+        // Don't remove if it's the last ingredient field
+        if (ingredientsContainer.children.length > 1) {
+          this.parentElement.remove();
+        }
+      });
+    });
+  }
+
+  function showAlert(message, type) {
+    const alertContainer = document.getElementById('alert-container');
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type}`;
+    alert.textContent = message;
+
+    alertContainer.appendChild(alert);
+
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+      alert.remove();
+    }, 5000);
+  }
+</script>
+</body>
+</html>
