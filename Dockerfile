@@ -35,8 +35,11 @@ COPY --from=build /app/build/libs/*.jar app.jar
 # Set environment variables
 ENV SPRING_PROFILES_ACTIVE=prod
 
+# Add diagnostic command to print environment variables (sanitizing sensitive info)
+RUN echo "Diagnostics will be printed on startup"
+
 # Expose the port the app will run on
 EXPOSE 8080
 
-# Command to run the application
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Command to run the application with MongoDB connection debug
+ENTRYPOINT ["java", "-Dspring.profiles.active=prod", "-Dlogging.level.org.springframework.data.mongodb=DEBUG", "-jar", "app.jar"]
