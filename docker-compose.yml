@@ -21,7 +21,7 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - MONGODB_URI=mongodb+srv://elieissa:1234@cluster0.wgnomye.mongodb.net/recipe_db?retryWrites=true&w=majority&appName=Cluster0
-      - JWT_SECRET=6c0f0014f71deeacf37fa86a8d4eb27d
+      - JWT_SECRET=6c0f0014f71deeacf37fa86a8d4eb27d5a9b7a234ec6f945c79bc57c24a32bb5c28f9e01a2e76c3fdfa76152c67b4f12
       - JWT_EXPIRATION=86400
 
 volumes:
