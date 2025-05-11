@@ -392,7 +392,7 @@
   const closeRecipeModal = document.getElementById('close-recipe-modal');
 
   // API base URL - change this to match your deployment
-  const API_URL = 'http://recipe-management-api.onrender.com';
+  const API_URL = window.location.origin;
 
   // Load data when page loads
   document.addEventListener('DOMContentLoaded', () => {
