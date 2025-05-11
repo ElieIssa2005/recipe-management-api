@@ -233,6 +233,20 @@
 </div>
 
 <script>
+    // Debug logging
+    console.log('Starting application...');
+    window.addEventListener('error', function(e) {
+        console.error('Global error:', e.message, e);
+    });
+
+    // API base URL
+    const API_URL = 'http://recipe-management-api.onrender.com';
+    console.log('Using API URL:', API_URL);
+
+    // Check for existing auth
+    const savedToken = localStorage.getItem('auth_token');
+    console.log('Saved token exists:', savedToken ? 'Yes' : 'No');
+
     // DOM Elements
     const customerRole = document.getElementById('customer-role');
     const chefRole = document.getElementById('chef-role');
@@ -275,19 +289,25 @@
         const password = document.getElementById('password').value;
 
         try {
-            const response = await fetch(`${API_URL}/api/auth/login`, {
-                method: 'POST',
+            // Keep API_URL as 'http://recipe-management-api.onrender.com'
+            // Example for customer.html and chef.html
+            const response = await fetch(`${API_URL}/api/recipes`, {
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
                 },
-                body: JSON.stringify({ username, password })
+                credentials: 'include'
             });
 
             if (!response.ok) {
+                console.error('Login response status:', response.status);
+                console.error('Login response text:', await response.text());
                 throw new Error('Login failed');
             }
 
             const data = await response.json();
+            console.log('Login successful, token received:', data.token ? 'Yes' : 'No');
 
             // Store auth token in localStorage
             localStorage.setItem('auth_token', data.token);
@@ -297,7 +317,31 @@
             window.location.href = 'chef.html';
 
         } catch (error) {
+            console.error('Login error:', error);
             errorMessage.style.display = 'block';
+        }
+    });
+
+    // Test API connection when page loads
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            console.log('Testing API connection...');
+            const response = await fetch(`${API_URL}/health`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                console.log('API connection successful!');
+                const data = await response.json();
+                console.log('API health check:', data);
+            } else {
+                console.error('API connection failed:', response.status);
+            }
+        } catch (error) {
+            console.error('Could not connect to API:', error);
         }
     });
 </script>

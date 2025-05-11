@@ -382,6 +382,20 @@
 </div>
 
 <script>
+  // Debug logging
+  console.log('Starting application...');
+  window.addEventListener('error', function(e) {
+    console.error('Global error:', e.message, e);
+  });
+
+  // API base URL
+  const API_URL = 'http://recipe-management-api.onrender.com';
+  console.log('Using API URL:', API_URL);
+
+  // Check for existing auth
+  const savedToken = localStorage.getItem('auth_token');
+  console.log('Saved token exists:', savedToken ? 'Yes' : 'No');
+
   // DOM Elements
   const categoryFilter = document.getElementById('category-filter');
   const searchButton = document.getElementById('search-button');
@@ -442,7 +456,15 @@
     showLoading();
 
     try {
-      const response = await fetch(`${API_URL}/api/recipes`);
+      // Example for customer.html and chef.html
+      const response = await fetch(`${API_URL}/api/recipes`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        credentials: 'include'
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch recipes');
       }

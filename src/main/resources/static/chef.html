@@ -537,6 +537,20 @@
 </div>
 
 <script>
+  // Debug logging
+  console.log('Starting application...');
+  window.addEventListener('error', function(e) {
+    console.error('Global error:', e.message, e);
+  });
+
+  // API base URL
+  const API_URL = 'http://recipe-management-api.onrender.com';
+  console.log('Using API URL:', API_URL);
+
+  // Check for existing auth
+  const savedToken = localStorage.getItem('auth_token');
+  console.log('Saved token exists:', savedToken ? 'Yes' : 'No');
+
   // DOM Elements
   const usernameDisplay = document.getElementById('username-display');
   const logoutButton = document.getElementById('logout-button');
@@ -661,10 +675,14 @@
     allRecipesTable.style.display = 'none';
 
     try {
+      // Example for customer.html and chef.html
       const response = await fetch(`${API_URL}/api/recipes`, {
         headers: {
-          'Authorization': `Bearer ${authToken}`
-        }
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        credentials: 'include'
       });
 
       if (!response.ok) {
@@ -914,12 +932,20 @@
 
   async function handleRecipeSubmit(event) {
     event.preventDefault();
+    console.log('Recipe form submitted');
 
+    // Get form data
     const recipeId = document.getElementById('recipe-id').value;
     const title = document.getElementById('title').value;
     const category = document.getElementById('category').value;
     const cookingTime = parseInt(document.getElementById('cooking-time').value);
     const instructions = document.getElementById('instructions').value;
+
+    // Show processing state
+    const saveButton = document.getElementById('save-recipe');
+    const originalButtonText = saveButton.textContent;
+    saveButton.textContent = 'Saving...';
+    saveButton.disabled = true;
 
     // Collect ingredients
     const ingredientInputs = document.querySelectorAll('input[name="ingredient"]');
@@ -934,7 +960,12 @@
       instructions
     };
 
+    // If editing, add the ID to logging but not to the request body
+    const logRecipeId = recipeId ? recipeId : 'new recipe';
+    console.log(`Submitting recipe (${logRecipeId}):`, JSON.stringify(recipe));
+
     try {
+      // Determine if creating new or updating existing
       let url = `${API_URL}/api/recipes`;
       let method = 'POST';
 
@@ -942,33 +973,74 @@
       if (recipeId) {
         url = `${API_URL}/api/recipes/${recipeId}`;
         method = 'PUT';
+        console.log(`Updating existing recipe with ID: ${recipeId}`);
+      } else {
+        console.log('Creating new recipe');
       }
 
+      // Make the API request
+      console.log(`Making ${method} request to ${url}`);
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
           'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify(recipe)
       });
 
+      // Log response status
+      console.log(`Response status: ${response.status}`);
+
+      // Handle non-success responses
       if (!response.ok) {
-        throw new Error('Error saving recipe');
+        let errorMessage = 'Error saving recipe';
+        try {
+          // Try to get detailed error message
+          const errorData = await response.text();
+          console.error(`Error response (${response.status}):`, errorData);
+
+          // If the response is JSON, try to extract a more useful message
+          if (errorData && errorData.includes('{')) {
+            try {
+              const jsonError = JSON.parse(errorData);
+              if (jsonError.message) {
+                errorMessage = jsonError.message;
+              }
+            } catch (e) {
+              // Not valid JSON, use the text
+              errorMessage = errorData;
+            }
+          }
+        } catch (textError) {
+          console.error('Could not parse error response:', textError);
+        }
+
+        throw new Error(`${errorMessage} (Status ${response.status})`);
       }
 
-      // Success
+      // Parse successful response
+      let savedRecipe;
+      try {
+        savedRecipe = await response.json();
+        console.log('Recipe saved successfully:', savedRecipe);
+      } catch (parseError) {
+        console.warn('Could not parse response as JSON, but request was successful');
+      }
+
+      // Success - reset form and UI
       recipeForm.reset();
       document.getElementById('recipe-id').value = '';
 
       // Reset ingredients to one empty field
       const ingredientsContainer = document.getElementById('ingredients-container');
       ingredientsContainer.innerHTML = `
-                    <div class="ingredient-row">
-                        <input type="text" name="ingredient" placeholder="e.g. 2 cups flour" required>
-                        <button type="button" class="remove-ingredient">×</button>
-                    </div>
-                `;
+            <div class="ingredient-row">
+                <input type="text" name="ingredient" placeholder="e.g. 2 cups flour" required>
+                <button type="button" class="remove-ingredient">×</button>
+            </div>
+        `;
       setupIngredientRemoval();
 
       // Refresh data and switch to all recipes tab
@@ -976,11 +1048,17 @@
       fetchMyRecipes();
       switchTab('all-recipes');
 
-      showAlert(recipeId ? 'Recipe updated successfully!' : 'Recipe added successfully!', 'success');
+      // Show success message
+      const actionText = recipeId ? 'updated' : 'added';
+      showAlert(`Recipe ${actionText} successfully!`, 'success');
 
     } catch (error) {
       console.error('Error saving recipe:', error);
-      showAlert('Failed to save recipe. Please try again.', 'error');
+      showAlert(`Failed to save recipe: ${error.message}`, 'error');
+    } finally {
+      // Restore button state
+      saveButton.textContent = originalButtonText;
+      saveButton.disabled = false;
     }
   }
 
