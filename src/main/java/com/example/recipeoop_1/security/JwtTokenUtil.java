@@ -20,7 +20,7 @@ public class JwtTokenUtil implements Serializable {
 
     private static final long serialVersionUID = -2550185165626007488L;
 
-    @Value("${jwt.secret:RecipeSecretKey123456789012345678901234567890}")
+    @Value("${jwt.secret:6c0f0014f71deeacf37fa86a8d4eb27d}")
     private String secret;
 
     @Value("${jwt.expiration:86400}")
