@@ -1,0 +1,10 @@
+.git
+.github
+.gradle
+.idea
+build
+!build/libs
+*.iml
+*.iws
+*.ipr
+.DS_Store

@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=recipe_db
+
+  recipe-api:
+    build: .
+    container_name: recipe-api
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongodb
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - MONGODB_URI=mongodb://mongodb:27017/recipe_db
+      - JWT_SECRET=development_jwt_secret_key_do_not_use_in_production
+      - JWT_EXPIRATION=86400
+
+volumes:
+  mongodb_data:
