@@ -452,7 +452,7 @@
   <!-- Tab Navigation -->
   <div class="tab-buttons">
     <button class="tab-button active" data-tab="all-recipes">All Recipes</button>
-    <button class="tab-button" data-tab="my-recipes">My Recipes</button>
+    <button class="tab-button" data-tab="my-recipes-tab">My Recipes</button>
     <button class="tab-button" data-tab="add-recipe">Add Recipe</button>
   </div>
 
@@ -547,9 +547,16 @@
   const API_URL = 'http://recipe-management-api.onrender.com';
   console.log('Using API URL:', API_URL);
 
-  // Check for existing auth
-  const savedToken = localStorage.getItem('auth_token');
-  console.log('Saved token exists:', savedToken ? 'Yes' : 'No');
+  // Get authentication data
+  let authToken = localStorage.getItem('auth_token');
+  let currentUser = localStorage.getItem('username');
+  console.log('Authentication status:', authToken ? 'Logged in' : 'Not logged in');
+
+  // Check if user is authenticated
+  if (!authToken || !currentUser) {
+    console.log('No authentication data found, redirecting to login');
+    window.location.href = 'index.html';
+  }
 
   // DOM Elements
   const usernameDisplay = document.getElementById('username-display');
@@ -572,16 +579,6 @@
   const myRecipesTable = document.getElementById('my-recipes-table');
   const allRecipesLoading = document.getElementById('all-recipes-loading');
   const myRecipesLoading = document.getElementById('my-recipes-loading');
-
-  // API Configuration
-  const API_URL = window.location.origin;
-  let authToken = localStorage.getItem('auth_token');
-  let currentUser = localStorage.getItem('username');
-
-  // Check if user is authenticated
-  if (!authToken || !currentUser) {
-    window.location.href = 'index.html';
-  }
 
   // Initialize the application
   document.addEventListener('DOMContentLoaded', initialize);
@@ -661,6 +658,7 @@
   }
 
   function handleLogout() {
+    console.log('Logging out...');
     // Clear authentication data
     localStorage.removeItem('auth_token');
     localStorage.removeItem('username');
@@ -675,25 +673,25 @@
     allRecipesTable.style.display = 'none';
 
     try {
-      // Example for customer.html and chef.html
+      console.log('Fetching all recipes...');
       const response = await fetch(`${API_URL}/api/recipes`, {
         headers: {
           'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        credentials: 'include'
+          'Content-Type': 'application/json'
+        }
       });
 
       if (!response.ok) {
         if (response.status === 401) {
+          console.log('Authentication expired, redirecting to login');
           handleLogout();
           return;
         }
-        throw new Error('Failed to fetch recipes');
+        throw new Error(`Failed to fetch recipes: ${response.status}`);
       }
 
       const recipes = await response.json();
+      console.log(`Fetched ${recipes.length} recipes`);
 
       // Update stats
       totalRecipesElement.textContent = recipes.length;
@@ -747,21 +745,25 @@
     myRecipesTable.style.display = 'none';
 
     try {
+      console.log('Fetching my recipes...');
       const response = await fetch(`${API_URL}/api/recipes/my-recipes`, {
         headers: {
-          'Authorization': `Bearer ${authToken}`
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
         }
       });
 
       if (!response.ok) {
         if (response.status === 401) {
+          console.log('Authentication expired, redirecting to login');
           handleLogout();
           return;
         }
-        throw new Error('Failed to fetch my recipes');
+        throw new Error(`Failed to fetch my recipes: ${response.status}`);
       }
 
       const recipes = await response.json();
+      console.log(`Fetched ${recipes.length} of my recipes`);
 
       // Update stats
       myRecipesElement.textContent = recipes.length;
@@ -811,17 +813,20 @@
 
   async function fetchCategories() {
     try {
+      console.log('Fetching categories...');
       const response = await fetch(`${API_URL}/api/recipes/categories`, {
         headers: {
-          'Authorization': `Bearer ${authToken}`
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
         }
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch categories');
+        throw new Error(`Failed to fetch categories: ${response.status}`);
       }
 
       const categories = await response.json();
+      console.log(`Fetched ${categories.length} categories`);
 
       // Update stats
       totalCategoriesElement.textContent = categories.length;
@@ -833,17 +838,20 @@
 
   async function viewRecipe(id) {
     try {
+      console.log(`Viewing recipe with ID: ${id}`);
       const response = await fetch(`${API_URL}/api/recipes/${id}`, {
         headers: {
-          'Authorization': `Bearer ${authToken}`
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
         }
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch recipe details');
+        throw new Error(`Failed to fetch recipe details: ${response.status}`);
       }
 
       const recipe = await response.json();
+      console.log('Recipe details:', recipe);
 
       // Here you would typically show a modal with recipe details
       // For simplicity, we'll just alert with basic info
@@ -857,17 +865,20 @@
 
   async function editRecipe(id) {
     try {
+      console.log(`Editing recipe with ID: ${id}`);
       const response = await fetch(`${API_URL}/api/recipes/${id}`, {
         headers: {
-          'Authorization': `Bearer ${authToken}`
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
         }
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch recipe details');
+        throw new Error(`Failed to fetch recipe details: ${response.status}`);
       }
 
       const recipe = await response.json();
+      console.log('Recipe details for editing:', recipe);
 
       // Populate form with recipe data
       document.getElementById('recipe-id').value = recipe.id;
@@ -907,16 +918,20 @@
     }
 
     try {
+      console.log(`Deleting recipe with ID: ${id}`);
       const response = await fetch(`${API_URL}/api/recipes/${id}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${authToken}`
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
         }
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete recipe');
+        throw new Error(`Failed to delete recipe: ${response.status}`);
       }
+
+      console.log('Recipe deleted successfully');
 
       // Refresh data
       fetchAllRecipes();
@@ -960,9 +975,8 @@
       instructions
     };
 
-    // If editing, add the ID to logging but not to the request body
-    const logRecipeId = recipeId ? recipeId : 'new recipe';
-    console.log(`Submitting recipe (${logRecipeId}):`, JSON.stringify(recipe));
+    // Log what we're doing
+    console.log(`${recipeId ? 'Updating' : 'Creating'} recipe:`, recipe);
 
     try {
       // Determine if creating new or updating existing
@@ -973,74 +987,41 @@
       if (recipeId) {
         url = `${API_URL}/api/recipes/${recipeId}`;
         method = 'PUT';
-        console.log(`Updating existing recipe with ID: ${recipeId}`);
-      } else {
-        console.log('Creating new recipe');
       }
 
       // Make the API request
-      console.log(`Making ${method} request to ${url}`);
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
           'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify(recipe)
       });
 
-      // Log response status
-      console.log(`Response status: ${response.status}`);
-
-      // Handle non-success responses
+      // Check if request was successful
       if (!response.ok) {
-        let errorMessage = 'Error saving recipe';
-        try {
-          // Try to get detailed error message
-          const errorData = await response.text();
-          console.error(`Error response (${response.status}):`, errorData);
-
-          // If the response is JSON, try to extract a more useful message
-          if (errorData && errorData.includes('{')) {
-            try {
-              const jsonError = JSON.parse(errorData);
-              if (jsonError.message) {
-                errorMessage = jsonError.message;
-              }
-            } catch (e) {
-              // Not valid JSON, use the text
-              errorMessage = errorData;
-            }
-          }
-        } catch (textError) {
-          console.error('Could not parse error response:', textError);
-        }
-
-        throw new Error(`${errorMessage} (Status ${response.status})`);
+        const errorText = await response.text();
+        console.error(`Error response (${response.status}):`, errorText);
+        throw new Error(`Failed to save recipe: ${response.status}`);
       }
 
-      // Parse successful response
-      let savedRecipe;
-      try {
-        savedRecipe = await response.json();
-        console.log('Recipe saved successfully:', savedRecipe);
-      } catch (parseError) {
-        console.warn('Could not parse response as JSON, but request was successful');
-      }
+      // Parse the response
+      const savedRecipe = await response.json();
+      console.log('Recipe saved successfully:', savedRecipe);
 
-      // Success - reset form and UI
+      // Reset form
       recipeForm.reset();
       document.getElementById('recipe-id').value = '';
 
       // Reset ingredients to one empty field
       const ingredientsContainer = document.getElementById('ingredients-container');
       ingredientsContainer.innerHTML = `
-            <div class="ingredient-row">
-                <input type="text" name="ingredient" placeholder="e.g. 2 cups flour" required>
-                <button type="button" class="remove-ingredient">×</button>
-            </div>
-        `;
+        <div class="ingredient-row">
+            <input type="text" name="ingredient" placeholder="e.g. 2 cups flour" required>
+            <button type="button" class="remove-ingredient">×</button>
+        </div>
+      `;
       setupIngredientRemoval();
 
       // Refresh data and switch to all recipes tab
@@ -1049,8 +1030,7 @@
       switchTab('all-recipes');
 
       // Show success message
-      const actionText = recipeId ? 'updated' : 'added';
-      showAlert(`Recipe ${actionText} successfully!`, 'success');
+      showAlert(`Recipe ${recipeId ? 'updated' : 'added'} successfully!`, 'success');
 
     } catch (error) {
       console.error('Error saving recipe:', error);
@@ -1068,9 +1048,9 @@
     const newRow = document.createElement('div');
     newRow.className = 'ingredient-row';
     newRow.innerHTML = `
-                <input type="text" name="ingredient" placeholder="e.g. 2 cups flour" required>
-                <button type="button" class="remove-ingredient">×</button>
-            `;
+      <input type="text" name="ingredient" placeholder="e.g. 2 cups flour" required>
+      <button type="button" class="remove-ingredient">×</button>
+    `;
     ingredientsContainer.appendChild(newRow);
     setupIngredientRemoval();
   }
