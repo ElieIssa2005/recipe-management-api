@@ -30,12 +30,20 @@ public class WebSecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize -> authorize
-                        // Public endpoints
+                        // Public endpoints - Frontend static content
+                        .requestMatchers("/", "/index.html", "/customer.html", "/chef.html").permitAll()
+                        // Public endpoints - Static resources
+                        .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
+                        // Public endpoints - Health check
+                        .requestMatchers("/health").permitAll()
+                        // Public endpoints - Authentication
                         .requestMatchers("/api/auth/**").permitAll()
+                        // Public endpoints - API documentation
                         .requestMatchers("/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                         // Protected endpoints
                         .requestMatchers("/api/recipes/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/recipes/**").hasAnyRole("USER", "ADMIN")
+                        // All others require authentication
                         .anyRequest().authenticated())
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint))
@@ -47,8 +55,4 @@ public class WebSecurityConfig {
 
         return http.build();
     }
-
-    // Remove these beans as they are now in AppConfig
-    // public PasswordEncoder passwordEncoder() {...}
-    // public AuthenticationManager authenticationManager(...) {...}
 }
