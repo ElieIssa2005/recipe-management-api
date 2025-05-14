@@ -33,6 +33,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring30x:4.11.0")
+    compileOnly("javax.annotation:javax.annotation-api:1.3.2") // For JSR-305 annotations
 }
 
 tasks.withType<Test> {
@@ -54,6 +55,10 @@ tasks.withType<Javadoc>().configureEach {
             memberLevel = JavadocMemberLevel.PRIVATE
             links = listOf("https://docs.oracle.com/en/java/javase/17/docs/api/")
         }
+    }
+
+    if (project.configurations.findByName("compileOnly") != null) {
+        classpath += project.configurations.getByName("compileOnly")
     }
 }
 

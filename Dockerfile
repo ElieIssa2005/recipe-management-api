@@ -20,16 +20,13 @@ RUN ./gradlew dependencies --no-daemon
 # Copy source code (this includes src/main/java, src/main/resources, etc.)
 COPY src src
 
-# Generate Javadoc. Output will be in /app/build/docs/javadoc/ within this build stage
+# Generate Javadoc.
+# As per build.gradle.kts, output will go directly to /app/src/main/resources/static/apidocs/
 RUN ./gradlew javadoc --no-daemon
 
-# Create the target directory in src/main/resources for Spring Boot to pick up
-# This directory needs to exist *before* the JAR is built by the next command.
-RUN mkdir -p /app/src/main/resources/static/apidocs
-
-# Copy the generated Javadoc from build/docs/javadoc into src/main/resources/static/apidocs
-# This makes the Javadoc part of the resources that get packaged into the JAR.
-RUN cp -r /app/build/docs/javadoc/* /app/src/main/resources/static/apidocs/
+# The mkdir and cp commands below are NO LONGER NEEDED because Javadoc is generated directly into the static resources path.
+# RUN mkdir -p /app/src/main/resources/static/apidocs
+# RUN cp -r /app/build/docs/javadoc/* /app/src/main/resources/static/apidocs/ # <-- REMOVE THIS LINE
 
 # Build the application.
 # This will now include the Javadoc from src/main/resources/static/apidocs in the JAR.
