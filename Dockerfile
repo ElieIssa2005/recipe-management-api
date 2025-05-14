@@ -22,14 +22,15 @@ COPY src src
 
 # Generate Javadoc.
 # As per build.gradle.kts, output will go directly to /app/src/main/resources/static/apidocs/
+# This step ensures the apidocs directory is populated before the JAR is built.
 RUN ./gradlew javadoc --no-daemon
 
-# The mkdir and cp commands below are NO LONGER NEEDED because Javadoc is generated directly into the static resources path.
-# RUN mkdir -p /app/src/main/resources/static/apidocs
-# RUN cp -r /app/build/docs/javadoc/* /app/src/main/resources/static/apidocs/ # <-- REMOVE THIS LINE
+# The mkdir and cp commands that were here are NO LONGER NEEDED
+# because Javadoc is now generated directly into the static resources path
+# by the `gradlew javadoc` command above, thanks to the destinationDir setting in build.gradle.kts.
 
 # Build the application.
-# This will now include the Javadoc from src/main/resources/static/apidocs in the JAR.
+# This will package files from src/main/resources (including static/apidocs) into the JAR.
 RUN ./gradlew build -x test --no-daemon
 
 # Create a lean runtime image
