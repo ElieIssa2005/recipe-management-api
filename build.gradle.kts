@@ -1,4 +1,8 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.gradle.api.tasks.javadoc.Javadoc
+import org.gradle.external.javadoc.StandardJavadocDocletOptions
+import org.gradle.external.javadoc.JavadocMemberLevel
+import org.gradle.api.tasks.SourceSetContainer
+import org.gradle.api.JavaVersion
 
 plugins {
     id("org.springframework.boot") version "3.2.5"
@@ -26,25 +30,34 @@ dependencies {
     implementation("io.jsonwebtoken:jjwt-api:0.11.5")
     implementation("io.jsonwebtoken:jjwt-impl:0.11.5")
     implementation("io.jsonwebtoken:jjwt-jackson:0.11.5")
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring30x:4.11.0")
-
-    implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
-    implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("org.springframework.boot:spring-boot-starter-validation")
-    implementation("org.springframework.boot:spring-boot-starter-security")
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("org.springframework.security:spring-security-test")
 }
 
 tasks.withType<Test> {
     useJUnitPlatform()
 }
 
-tasks.withType<KotlinCompile> {
+tasks.withType<Javadoc>().configureEach {
+    val sourceSets = project.extensions.getByType(SourceSetContainer::class.java)
+    this.source = sourceSets.getByName("main").allJava
+    this.classpath = configurations.compileClasspath.get()
+
+    // Explicitly call the setter method for destinationDir
+    this.setDestinationDir(project.file("${project.projectDir}/src/main/resources/static/apidocs"))
+    // OR for default build directory:
+    // this.setDestinationDir(project.file("${project.buildDir}/docs/javadoc"))
+
+    this.options {
+        (this as StandardJavadocDocletOptions).apply {
+            memberLevel = JavadocMemberLevel.PRIVATE
+            links = listOf("https://docs.oracle.com/en/java/javase/17/docs/api/")
+        }
+    }
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     kotlinOptions {
         freeCompilerArgs += "-Xjsr305=strict"
         jvmTarget = "17"
