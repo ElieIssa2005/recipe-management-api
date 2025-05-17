@@ -1,7 +1,9 @@
 package com.example.recipeoop_1.service;
 
 import com.example.recipeoop_1.model.Recipe;
-import com.example.recipeoop_1.exception.RecipeNotFoundException; // Import custom exception
+import com.example.recipeoop_1.exception.RecipeNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -10,8 +12,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-// import java.util.Optional; // Not used
-// import java.util.stream.Collectors; // Not used directly in this snippet
 
 /**
  * Implementation of the {@link RecipeService} interface.
@@ -21,21 +21,35 @@ import java.util.List;
  * directly with {@link MongoTemplate} for database operations and uses
  * {@link CategoryService} to manage recipe categories, which are stored
  * as separate MongoDB collections (e.g., "recipe_desserts").
+ * When a recipe is deleted, if its category collection becomes empty and is not
+ * the default "uncategorized" collection, the category collection itself is deleted.
+ * Similarly, when a recipe's category is updated, if the old category collection
+ * becomes empty, it is also deleted (unless it's "uncategorized").
  * </p>
  *
- * @author Your Name/Team Name
- * @version 1.0
+ * @author Your Name/Team Name (Original authors: Elie Issa - Michel Ghazaly, as per project context)
+ * @version 1.1
  * @since 2025-05-14
  * @see RecipeService
  * @see MongoTemplate
  * @see CategoryService
  * @see Recipe
+ * @see RecipeNotFoundException
  */
 @Service
 public class RecipeServiceImpl implements RecipeService {
 
+    private static final Logger log = LoggerFactory.getLogger(RecipeServiceImpl.class);
+
     private final MongoTemplate mongoTemplate;
     private final CategoryService categoryService;
+
+    /**
+     * Name of the collection used for recipes that are not explicitly categorized
+     * or whose category name resolves to empty. This collection will not be
+     * automatically deleted even if it becomes empty.
+     */
+    private static final String UNCATEGORIZED_COLLECTION_NAME = "recipe_uncategorized";
 
     /**
      * Constructs a {@code RecipeServiceImpl} with the necessary dependencies.
@@ -62,20 +76,19 @@ public class RecipeServiceImpl implements RecipeService {
      */
     @Override
     public Recipe createRecipe(Recipe recipeDetails, String username) {
-        // Set creator
         recipeDetails.setCreatedBy(username);
 
-        // Ensure category exists and get collection name
         String category = recipeDetails.getCategory();
         if (category == null || category.trim().isEmpty()) {
             category = "uncategorized"; // Default category
             recipeDetails.setCategory(category);
         }
 
+        // Ensures collection is created if new, using the user-friendly category name
         categoryService.ensureCategoryExists(category);
         String collectionName = CategoryService.formatCollectionName(category);
 
-        // Save to appropriate collection
+        log.info("Creating recipe '{}' in collection '{}' by user '{}'", recipeDetails.getTitle(), collectionName, username);
         return mongoTemplate.insert(recipeDetails, collectionName);
     }
 
@@ -84,18 +97,26 @@ public class RecipeServiceImpl implements RecipeService {
      * <p>
      * This implementation iterates through all known category collections (obtained via
      * {@link CategoryService#getAllCategories()}), fetches all recipes from each,
-     * and aggregates them into a single list.
+     * and aggregates them into a single list. It defensively checks if a collection
+     * exists before querying.
      * </p>
      */
     @Override
     public List<Recipe> getAllRecipes() {
         List<Recipe> allRecipes = new ArrayList<>();
+        // Get all categories based on existing collection names (e.g., "desserts", "main_course")
+        List<String> categories = categoryService.getAllCategories();
+        log.debug("Fetching all recipes from categories: {}", categories);
 
-        // Get all categories and fetch recipes from each
-        for (String category : categoryService.getAllCategories()) {
-            String collectionName = CategoryService.formatCollectionName(category);
-            List<Recipe> categoryRecipes = mongoTemplate.findAll(Recipe.class, collectionName);
-            allRecipes.addAll(categoryRecipes);
+        for (String categoryName : categories) {
+            String collectionName = CategoryService.formatCollectionName(categoryName);
+            if (mongoTemplate.collectionExists(collectionName)) {
+                List<Recipe> categoryRecipes = mongoTemplate.findAll(Recipe.class, collectionName);
+                allRecipes.addAll(categoryRecipes);
+            } else {
+                // This case should be rare if categoryService.getAllCategories() is in sync
+                log.warn("Collection '{}' for category '{}' not found during getAllRecipes, though category was listed.", collectionName, categoryName);
+            }
         }
         return allRecipes;
     }
@@ -113,7 +134,12 @@ public class RecipeServiceImpl implements RecipeService {
     public Recipe getRecipeById(String category, String id) {
         String collectionName = CategoryService.formatCollectionName(category);
         Query query = new Query(Criteria.where("id").is(id));
-        return mongoTemplate.findOne(query, Recipe.class, collectionName);
+        log.debug("Fetching recipe by ID '{}' from category '{}' (collection '{}')", id, category, collectionName);
+        Recipe recipe = mongoTemplate.findOne(query, Recipe.class, collectionName);
+        if (recipe == null) {
+            log.warn("Recipe with ID '{}' not found in collection '{}'", id, collectionName);
+        }
+        return recipe;
     }
 
     /**
@@ -121,18 +147,24 @@ public class RecipeServiceImpl implements RecipeService {
      * <p>
      * This implementation iterates through all known category collections. For each category,
      * it attempts to find the recipe using {@link #getRecipeById(String, String)}.
-     * The first matching recipe found is returned.
+     * The first matching recipe found is returned. It defensively checks if a collection
+     * exists before querying.
      * </p>
      * @throws RecipeNotFoundException if the recipe with the given ID is not found in any category.
      */
     @Override
     public Recipe getRecipeById(String id) throws RecipeNotFoundException {
-        for (String category : categoryService.getAllCategories()) {
-            Recipe recipe = getRecipeById(category, id); // Uses the overloaded method
+        log.debug("Attempting to find recipe by ID '{}' across all categories", id);
+        List<String> categories = categoryService.getAllCategories(); // Category names like "desserts"
+        for (String categoryName : categories) {
+            // getRecipeById(String category, String id) expects user-friendly category name
+            Recipe recipe = getRecipeById(categoryName, id);
             if (recipe != null) {
+                log.info("Found recipe ID '{}' in category '{}'", id, categoryName);
                 return recipe;
             }
         }
+        log.warn("Recipe with ID '{}' not found in any category.", id);
         throw new RecipeNotFoundException("Recipe not found with id: " + id);
     }
 
@@ -140,67 +172,69 @@ public class RecipeServiceImpl implements RecipeService {
      * {@inheritDoc}
      * <p>
      * This implementation first retrieves the existing recipe using {@link #getRecipeById(String)}.
-     * If the category of the recipe has changed in {@code recipeDetails}, the existing recipe
-     * is deleted from its old category collection, its ID is cleared (to allow MongoDB to generate a new one
-     * if necessary, though typically for updates the ID should be preserved if possible, this logic might need review
-     * if ID preservation across category moves is critical), and then it's re-created in the new category's collection
-     * using {@link #createRecipe(Recipe, String)}.
-     * If the category has not changed, the recipe is updated in place within its current collection
-     * by setting its properties and calling {@link MongoTemplate#save(Object, String)}.
+     * If the category of the recipe has changed in {@code recipeDetails}:
+     * <ol>
+     * <li>The existing recipe is deleted from its old category collection.</li>
+     * <li>If the old category collection becomes empty (and is not "uncategorized"), it is dropped.</li>
+     * <li>The recipe (with its original ID and creator) is then re-created in the new category's collection.
+     * The new category collection is ensured to exist.</li>
+     * </ol>
+     * If the category has not changed, the recipe is updated in place within its current collection.
      * </p>
      * @throws RecipeNotFoundException if the recipe to update is not found.
      */
     @Override
     public Recipe updateRecipe(String id, Recipe recipeDetails) throws RecipeNotFoundException {
-        Recipe existingRecipe = getRecipeById(id); // This will throw RecipeNotFoundException if not found
+        Recipe existingRecipe = getRecipeById(id); // Throws RecipeNotFoundException if not found
+        log.info("Updating recipe ID '{}', current title '{}'", id, existingRecipe.getTitle());
 
-        String oldCategory = existingRecipe.getCategory();
-        String newCategory = recipeDetails.getCategory();
-        // Ensure newCategory is not null and defaults if empty, similar to createRecipe
-        if (newCategory == null || newCategory.trim().isEmpty()) {
-            newCategory = "uncategorized";
-            recipeDetails.setCategory(newCategory);
+        String oldCategoryUserFriendly = existingRecipe.getCategory();
+        String newCategoryUserFriendly = recipeDetails.getCategory();
+
+        // Standardize new category name (e.g., if null/empty, set to "uncategorized")
+        if (newCategoryUserFriendly == null || newCategoryUserFriendly.trim().isEmpty()) {
+            newCategoryUserFriendly = "uncategorized";
+            recipeDetails.setCategory(newCategoryUserFriendly); // Update details object as well
         }
 
+        String oldCollectionName = CategoryService.formatCollectionName(oldCategoryUserFriendly);
+        String newCollectionName = CategoryService.formatCollectionName(newCategoryUserFriendly);
 
-        if (!oldCategory.equalsIgnoreCase(newCategory)) { // Case-insensitive category comparison
-            // Category has changed, effectively moving the recipe.
-            // Delete from old collection.
-            // The deleteRecipe method itself calls getRecipeById, which might be redundant here
-            // but ensures consistency.
-            deleteRecipe(id); // This uses the existingRecipe's ID and original category implicitly
+        if (!oldCollectionName.equalsIgnoreCase(newCollectionName)) {
+            log.info("Category changed for recipe ID '{}'. Moving from collection '{}' to '{}'.", id, oldCollectionName, newCollectionName);
+            // Delete from old collection
+            Query deleteQuery = new Query(Criteria.where("id").is(id));
+            mongoTemplate.remove(deleteQuery, Recipe.class, oldCollectionName);
+            log.debug("Removed recipe ID '{}' from old collection '{}'", id, oldCollectionName);
+
+            // Check if old collection (category) is now empty and should be deleted
+            // Also ensure the collection actually exists before trying to count or drop
+            if (mongoTemplate.collectionExists(oldCollectionName) &&
+                    !oldCollectionName.equalsIgnoreCase(UNCATEGORIZED_COLLECTION_NAME) &&
+                    mongoTemplate.count(new Query(), oldCollectionName) == 0) {
+                log.info("Old collection '{}' is now empty and not 'uncategorized'. Deleting collection.", oldCollectionName);
+                mongoTemplate.dropCollection(oldCollectionName);
+            }
 
             // Prepare for re-creation in new category.
             // Preserve the original ID and creator for the "moved" recipe.
-            recipeDetails.setId(existingRecipe.getId()); // Preserve original ID
+            recipeDetails.setId(existingRecipe.getId()); // Important: Use existing ID
             recipeDetails.setCreatedBy(existingRecipe.getCreatedBy()); // Preserve original creator
 
-            return createRecipe(recipeDetails, existingRecipe.getCreatedBy()); // Re-create in new category
+            // Ensure the new category collection exists (uses user-friendly name)
+            categoryService.ensureCategoryExists(newCategoryUserFriendly);
+
+            log.debug("Inserting recipe ID '{}' into new collection '{}'", id, newCollectionName);
+            return mongoTemplate.insert(recipeDetails, newCollectionName); // Use insert as it's effectively a new doc in this collection
         } else {
             // Category is the same, update in place.
-            String collectionName = CategoryService.formatCollectionName(oldCategory);
-
-            // Update fields of the existing recipe object before saving.
-            // It's crucial to update the 'existingRecipe' instance fetched from DB,
-            // then save that instance to ensure MongoDB's optimistic locking or versioning (if used) works.
-            // However, the current code uses mongoTemplate.save which can perform an upsert if ID is present.
-            // For clarity, explicitly setting fields on 'existingRecipe' is better if it's a true update.
-            // The current approach of saving 'recipeDetails' with existing 'id' might be okay
-            // if 'recipeDetails' is guaranteed to have the ID set by the controller/caller.
-            // Let's assume 'recipeDetails' should have the 'id' from the path variable.
-            recipeDetails.setId(id); // Ensure the ID from path is used for the save operation
+            log.debug("Category for recipe ID '{}' remains collection '{}'. Updating in place.", id, newCollectionName);
+            recipeDetails.setId(id); // Ensure ID is set for save (update)
             recipeDetails.setCreatedBy(existingRecipe.getCreatedBy()); // Preserve original creator
 
-            // Update properties of existingRecipe with values from recipeDetails
-            existingRecipe.setTitle(recipeDetails.getTitle());
-            existingRecipe.setIngredients(recipeDetails.getIngredients());
-            existingRecipe.setInstructions(recipeDetails.getInstructions());
-            existingRecipe.setCookingTime(recipeDetails.getCookingTime());
-            // Category is already ensured to be the same or updated on recipeDetails
-            existingRecipe.setCategory(recipeDetails.getCategory());
-
-
-            return mongoTemplate.save(existingRecipe, collectionName);
+            // mongoTemplate.save will update if ID exists, or insert if not (upsert behavior)
+            // in the specified collection.
+            return mongoTemplate.save(recipeDetails, newCollectionName);
         }
     }
 
@@ -209,7 +243,9 @@ public class RecipeServiceImpl implements RecipeService {
      * <p>
      * This implementation first retrieves the recipe using {@link #getRecipeById(String)}
      * to determine its category. Then, it constructs a query to remove the recipe
-     * from the appropriate category-specific collection using {@link MongoTemplate#remove(Query, Class, String)}.
+     * from the appropriate category-specific collection. If, after deletion, the category
+     * collection becomes empty and is not the "uncategorized" collection, the collection
+     * itself is dropped from the database.
      * </p>
      * @throws RecipeNotFoundException if the recipe to delete is not found.
      */
@@ -217,9 +253,29 @@ public class RecipeServiceImpl implements RecipeService {
     public void deleteRecipe(String id) throws RecipeNotFoundException {
         Recipe recipe = getRecipeById(id); // Throws RecipeNotFoundException if not found
         String collectionName = CategoryService.formatCollectionName(recipe.getCategory());
+        log.info("Deleting recipe ID '{}' with title '{}' from collection '{}'", id, recipe.getTitle(), collectionName);
 
         Query query = new Query(Criteria.where("id").is(id));
         mongoTemplate.remove(query, Recipe.class, collectionName);
+        log.debug("Recipe ID '{}' removed from collection '{}'", id, collectionName);
+
+        // Check if the collection is now empty, it's not the "uncategorized" collection,
+        // and it still exists (it might have been dropped by a concurrent operation or update)
+        if (mongoTemplate.collectionExists(collectionName) &&
+                !collectionName.equalsIgnoreCase(UNCATEGORIZED_COLLECTION_NAME)) {
+            long count = mongoTemplate.count(new Query(), collectionName);
+            log.debug("Collection '{}' now has {} recipes.", collectionName, count);
+            if (count == 0) {
+                log.info("Collection '{}' is now empty and is not the default 'uncategorized' collection. Deleting collection.", collectionName);
+                mongoTemplate.dropCollection(collectionName);
+                log.info("Collection '{}' dropped.", collectionName);
+            }
+        } else if (collectionName.equalsIgnoreCase(UNCATEGORIZED_COLLECTION_NAME)) {
+            log.debug("Collection '{}' is the default 'uncategorized' collection and will not be automatically deleted even if empty.", collectionName);
+        } else {
+            // This means the collection didn't exist when we checked, possibly already dropped.
+            log.debug("Collection '{}' did not exist or was already dropped when checking if empty post-delete.", collectionName);
+        }
     }
 
     /**
@@ -227,18 +283,23 @@ public class RecipeServiceImpl implements RecipeService {
      * <p>
      * This implementation iterates through all known category collections, queries each
      * for recipes where the {@code createdBy} field matches the given username,
-     * and aggregates the results.
+     * and aggregates the results. It defensively checks if a collection
+     * exists before querying.
      * </p>
      */
     @Override
     public List<Recipe> getRecipesByUser(String username) {
         List<Recipe> userRecipes = new ArrayList<>();
+        log.debug("Fetching recipes created by user '{}'", username);
+        List<String> categories = categoryService.getAllCategories(); // Category names like "desserts"
 
-        for (String category : categoryService.getAllCategories()) {
-            String collectionName = CategoryService.formatCollectionName(category);
-            Query query = new Query(Criteria.where("createdBy").is(username));
-            List<Recipe> categoryUserRecipes = mongoTemplate.find(query, Recipe.class, collectionName);
-            userRecipes.addAll(categoryUserRecipes);
+        for (String categoryName : categories) {
+            String collectionName = CategoryService.formatCollectionName(categoryName);
+            if(mongoTemplate.collectionExists(collectionName)) {
+                Query query = new Query(Criteria.where("createdBy").is(username));
+                List<Recipe> categoryUserRecipes = mongoTemplate.find(query, Recipe.class, collectionName);
+                userRecipes.addAll(categoryUserRecipes);
+            }
         }
         return userRecipes;
     }
@@ -248,19 +309,24 @@ public class RecipeServiceImpl implements RecipeService {
      * <p>
      * This implementation iterates through all category collections, performing a case-insensitive
      * regular expression search on the {@code title} field within each collection.
-     * All matching recipes are aggregated.
+     * All matching recipes are aggregated. It defensively checks if a collection
+     * exists before querying.
      * </p>
      */
     @Override
     public List<Recipe> searchRecipesByTitle(String title) {
         List<Recipe> matchingRecipes = new ArrayList<>();
-        String regexPattern = (title != null) ? title : ""; // Avoid NPE if title is null
+        String regexPattern = (title != null) ? title.trim() : ""; // Avoid NPE and trim
+        log.debug("Searching for recipes with title containing '{}'", regexPattern);
+        List<String> categories = categoryService.getAllCategories();
 
-        for (String category : categoryService.getAllCategories()) {
-            String collectionName = CategoryService.formatCollectionName(category);
-            Query query = new Query(Criteria.where("title").regex(regexPattern, "i")); // Case-insensitive search
-            List<Recipe> categoryMatches = mongoTemplate.find(query, Recipe.class, collectionName);
-            matchingRecipes.addAll(categoryMatches);
+        for (String categoryName : categories) {
+            String collectionName = CategoryService.formatCollectionName(categoryName);
+            if(mongoTemplate.collectionExists(collectionName)) {
+                Query query = new Query(Criteria.where("title").regex(regexPattern, "i")); // Case-insensitive search
+                List<Recipe> categoryMatches = mongoTemplate.find(query, Recipe.class, collectionName);
+                matchingRecipes.addAll(categoryMatches);
+            }
         }
         return matchingRecipes;
     }
@@ -275,11 +341,13 @@ public class RecipeServiceImpl implements RecipeService {
      */
     @Override
     public List<Recipe> searchRecipesByCategory(String category) {
-        String collectionName = CategoryService.formatCollectionName(category);
+        String collectionName = CategoryService.formatCollectionName(category); // category is user-friendly name
+        log.debug("Searching for recipes in category '{}' (collection '{}')", category, collectionName);
         if (mongoTemplate.collectionExists(collectionName)) {
             return mongoTemplate.findAll(Recipe.class, collectionName);
         }
-        return new ArrayList<>(); // Return empty list if category (collection) doesn't exist
+        log.warn("Category '{}' (collection '{}') not found for search.", category, collectionName);
+        return new ArrayList<>();
     }
 
     /**
@@ -287,21 +355,27 @@ public class RecipeServiceImpl implements RecipeService {
      * <p>
      * This implementation iterates through all category collections, querying each for recipes
      * where the {@code cookingTime} field is less than or equal to ({@code lte}) the specified time.
-     * All matching recipes are aggregated.
+     * All matching recipes are aggregated. It defensively checks if a collection
+     * exists before querying.
      * </p>
      */
     @Override
     public List<Recipe> searchRecipesByCookingTime(Integer cookingTime) {
         List<Recipe> matchingRecipes = new ArrayList<>();
         if (cookingTime == null || cookingTime < 0) { // Basic validation
+            log.warn("Invalid cooking time for search: {}", cookingTime);
             return matchingRecipes; // Or throw IllegalArgumentException
         }
+        log.debug("Searching for recipes with cooking time <= {} minutes", cookingTime);
+        List<String> categories = categoryService.getAllCategories();
 
-        for (String category : categoryService.getAllCategories()) {
-            String collectionName = CategoryService.formatCollectionName(category);
-            Query query = new Query(Criteria.where("cookingTime").lte(cookingTime));
-            List<Recipe> categoryMatches = mongoTemplate.find(query, Recipe.class, collectionName);
-            matchingRecipes.addAll(categoryMatches);
+        for (String categoryName : categories) {
+            String collectionName = CategoryService.formatCollectionName(categoryName);
+            if(mongoTemplate.collectionExists(collectionName)) {
+                Query query = new Query(Criteria.where("cookingTime").lte(cookingTime));
+                List<Recipe> categoryMatches = mongoTemplate.find(query, Recipe.class, collectionName);
+                matchingRecipes.addAll(categoryMatches);
+            }
         }
         return matchingRecipes;
     }
@@ -311,20 +385,24 @@ public class RecipeServiceImpl implements RecipeService {
      * <p>
      * This implementation iterates through all category collections, performing a case-insensitive
      * regular expression search on the {@code ingredients} array/list field within each collection.
-     * All matching recipes are aggregated.
+     * All matching recipes are aggregated. It defensively checks if a collection
+     * exists before querying.
      * </p>
      */
     @Override
     public List<Recipe> searchRecipesByIngredient(String ingredient) {
         List<Recipe> matchingRecipes = new ArrayList<>();
-        String regexPattern = (ingredient != null) ? ingredient : ""; // Avoid NPE
+        String regexPattern = (ingredient != null) ? ingredient.trim() : ""; // Avoid NPE and trim
+        log.debug("Searching for recipes containing ingredient '{}'", regexPattern);
+        List<String> categories = categoryService.getAllCategories();
 
-        for (String category : categoryService.getAllCategories()) {
-            String collectionName = CategoryService.formatCollectionName(category);
-            // MongoDB regex search on array elements typically matches if any element in the array matches.
-            Query query = new Query(Criteria.where("ingredients").regex(regexPattern, "i")); // Case-insensitive search
-            List<Recipe> categoryMatches = mongoTemplate.find(query, Recipe.class, collectionName);
-            matchingRecipes.addAll(categoryMatches);
+        for (String categoryName : categories) {
+            String collectionName = CategoryService.formatCollectionName(categoryName);
+            if(mongoTemplate.collectionExists(collectionName)) {
+                Query query = new Query(Criteria.where("ingredients").regex(regexPattern, "i")); // Case-insensitive search
+                List<Recipe> categoryMatches = mongoTemplate.find(query, Recipe.class, collectionName);
+                matchingRecipes.addAll(categoryMatches);
+            }
         }
         return matchingRecipes;
     }
@@ -338,66 +416,66 @@ public class RecipeServiceImpl implements RecipeService {
      * the filter criteria (title, maxCookingTime, ingredient) to each.
      * All criteria are optional and are added to the query only if provided.
      * Searches involving text (title, ingredient) are case-insensitive.
+     * It defensively checks if collections exist before querying.
      * </p>
      */
     @Override
     public List<Recipe> advancedSearch(String title, String category, Integer maxCookingTime, String ingredient) {
         List<Recipe> results;
+        log.debug("Performing advanced search with title: '{}', category: '{}', maxCookingTime: {}, ingredient: '{}'",
+                title, category, maxCookingTime, ingredient);
 
-        // If specific category is provided, search only in that collection
-        if (category != null && !category.trim().isEmpty()) {
-            String collectionName = CategoryService.formatCollectionName(category);
+        // Sanitize string inputs
+        String searchTitle = (title != null) ? title.trim() : null;
+        String searchCategory = (category != null) ? category.trim() : null;
+        String searchIngredient = (ingredient != null) ? ingredient.trim() : null;
+
+        if (searchCategory != null && !searchCategory.isEmpty()) {
+            String collectionName = CategoryService.formatCollectionName(searchCategory);
             if (!mongoTemplate.collectionExists(collectionName)) {
+                log.warn("Advanced search: Category '{}' (collection '{}') does not exist.", searchCategory, collectionName);
                 return new ArrayList<>(); // Category does not exist
             }
 
             Query query = new Query();
-            if (title != null && !title.trim().isEmpty()) {
-                query.addCriteria(Criteria.where("title").regex(title, "i"));
+            if (searchTitle != null && !searchTitle.isEmpty()) {
+                query.addCriteria(Criteria.where("title").regex(searchTitle, "i"));
             }
             if (maxCookingTime != null && maxCookingTime >= 0) { // Ensure non-negative
                 query.addCriteria(Criteria.where("cookingTime").lte(maxCookingTime));
             }
-            if (ingredient != null && !ingredient.trim().isEmpty()) {
-                query.addCriteria(Criteria.where("ingredients").regex(ingredient, "i"));
+            if (searchIngredient != null && !searchIngredient.isEmpty()) {
+                query.addCriteria(Criteria.where("ingredients").regex(searchIngredient, "i"));
             }
-
             results = mongoTemplate.find(query, Recipe.class, collectionName);
         } else {
             // Search across all categories if no specific category is given
             results = new ArrayList<>();
-            for (String cat : categoryService.getAllCategories()) {
-                String collectionName = CategoryService.formatCollectionName(cat);
+            List<String> allCategories = categoryService.getAllCategories(); // User-friendly names
+            for (String catName : allCategories) {
+                String collectionName = CategoryService.formatCollectionName(catName);
+                if (!mongoTemplate.collectionExists(collectionName)) continue; // Skip if collection somehow doesn't exist
+
                 Query query = new Query(); // New query for each category collection
 
-                if (title != null && !title.trim().isEmpty()) {
-                    query.addCriteria(Criteria.where("title").regex(title, "i"));
+                if (searchTitle != null && !searchTitle.isEmpty()) {
+                    query.addCriteria(Criteria.where("title").regex(searchTitle, "i"));
                 }
                 if (maxCookingTime != null && maxCookingTime >= 0) {
                     query.addCriteria(Criteria.where("cookingTime").lte(maxCookingTime));
                 }
-                if (ingredient != null && !ingredient.trim().isEmpty()) {
-                    query.addCriteria(Criteria.where("ingredients").regex(ingredient, "i"));
+                if (searchIngredient != null && !searchIngredient.isEmpty()) {
+                    query.addCriteria(Criteria.where("ingredients").regex(searchIngredient, "i"));
                 }
 
-                // Only execute find if there are some criteria or if we want all from category
-                // This condition avoids finding all recipes if all search terms are null/empty
-                // and no category was specified (which is this 'else' block).
-                // However, if the intent is to list all if no criteria, this check might be removed.
-                if (!query.getQueryObject().isEmpty() || query.getSortObject().isEmpty()) {
-                    List<Recipe> categoryMatches = mongoTemplate.find(query, Recipe.class, collectionName);
-                    results.addAll(categoryMatches);
-                } else if (query.getQueryObject().isEmpty() && title == null && maxCookingTime == null && ingredient == null) {
-                    // If no criteria were provided at all (and no specific category),
-                    // this would effectively be like getAllRecipes().
-                    // This part of the logic might need clarification based on desired behavior
-                    // when advancedSearch is called with all null/empty parameters.
-                    // For now, it will add all recipes from the category if no criteria are set.
-                    List<Recipe> categoryMatches = mongoTemplate.findAll(Recipe.class, collectionName);
-                    results.addAll(categoryMatches);
-                }
+                // If no criteria are specified for an all-category search (searchCategory is null here),
+                // this will find all recipes in the current category collection that match other (if any) criteria.
+                // If all searchTitle, maxCookingTime, searchIngredient are also null/empty,
+                // it effectively finds all recipes in this 'catName' collection.
+                results.addAll(mongoTemplate.find(query, Recipe.class, collectionName));
             }
         }
+        log.info("Advanced search found {} results.", results.size());
         return results;
     }
 }
