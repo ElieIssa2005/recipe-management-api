@@ -28,7 +28,7 @@ import java.util.List;
  * </p>
  *
  * @author Your Name/Team Name (Original authors: Elie Issa - Michel Ghazaly, as per project context)
- * @version 1.2
+ * @version 1.3
  * @since 2025-05-17
  * @see RecipeService
  * @see MongoTemplate
@@ -129,11 +129,10 @@ public class RecipeServiceImpl implements RecipeService {
 
     /**
      * {@inheritDoc}
-     * <p>
      * This implementation retrieves a recipe from the MongoDB collection corresponding
      * to the given category name. The category name is first formatted using
      * {@link CategoryService#formatCollectionName(String)}.
-     * </p>
+     *
      * @return The found {@link Recipe}, or {@code null} if not found in the specified category.
      */
     @Override
@@ -159,11 +158,11 @@ public class RecipeServiceImpl implements RecipeService {
      * @throws RecipeNotFoundException if no recipe with the given ID exists in any category.
      */
     @Override
-    public Recipe getRecipeById(String id) throws RecipeNotFoundException {
+    public Recipe getRecipeById(String id) throws RecipeNotFoundException { // This method's @Override is likely line 188
         log.debug("Attempting to find recipe by ID '{}' across all categories", id);
         List<String> categories = categoryService.getAllCategories();
         for (String categoryName : categories) {
-            Recipe recipe = getRecipeById(categoryName, id); // Uses user-friendly category name
+            Recipe recipe = getRecipeById(categoryName, id);
             if (recipe != null) {
                 log.info("Found recipe ID '{}' in category '{}'", id, categoryName);
                 return recipe;
