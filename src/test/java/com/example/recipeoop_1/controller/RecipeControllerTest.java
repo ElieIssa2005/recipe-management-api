@@ -9,6 +9,9 @@ import com.example.recipeoop_1.service.CategoryService;
 import com.example.recipeoop_1.service.RecipeService;
 import com.example.recipeoop_1.exception.RecipeNotFoundException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +20,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
@@ -575,8 +579,16 @@ class RecipeControllerTest {
     @Test
     @WithAnonymousUser
     void getRecipeById_asAnonymous_shouldReturnUnauthorized() throws Exception {
+        // Mock the behavior of the AuthenticationEntryPoint to actually send 401
+        doAnswer(invocation -> {
+            HttpServletResponse response = invocation.getArgument(1);
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized from mock");
+            return null;
+        }).when(jwtAuthenticationEntryPoint).commence(any(HttpServletRequest.class), any(HttpServletResponse.class), any(AuthenticationException.class));
+
         mockMvc.perform(get("/api/recipes/recipe1_id"))
                 .andExpect(status().isUnauthorized());
+
         verify(recipeService, never()).getRecipeById(anyString());
     }
 }
