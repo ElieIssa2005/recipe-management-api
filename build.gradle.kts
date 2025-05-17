@@ -2,12 +2,12 @@ import org.gradle.api.tasks.javadoc.Javadoc
 import org.gradle.external.javadoc.StandardJavadocDocletOptions
 import org.gradle.external.javadoc.JavadocMemberLevel
 import org.gradle.api.tasks.SourceSetContainer
-import org.gradle.api.JavaVersion
+import org.gradle.api.JavaVersion // Ensure this is imported
 
 plugins {
     id("org.springframework.boot") version "3.2.5"
     id("io.spring.dependency-management") version "1.1.4"
-    kotlin("jvm") version "1.9.20"
+    kotlin("jvm") version "1.9.20" // Your project uses Kotlin for Gradle scripts
     kotlin("plugin.spring") version "1.9.20"
 }
 
@@ -31,9 +31,6 @@ dependencies {
     implementation("io.jsonwebtoken:jjwt-impl:0.11.5")
     implementation("io.jsonwebtoken:jjwt-jackson:0.11.5")
 
-    // Ensure Swagger/OpenAPI dependency is REMOVED
-    // implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
-
     // For Javadoc "When.MAYBE" warning, ensure this is available.
     compileOnly("javax.annotation:javax.annotation-api:1.3.2")
 
@@ -48,55 +45,41 @@ tasks.withType<Test> {
 
 // Configure Javadoc task
 tasks.withType<Javadoc>().configureEach {
-    // 'this' implicitly refers to the Javadoc task instance here
-
-    // Get the main source set for Java files
     val sourceSets = project.extensions.getByType(SourceSetContainer::class.java)
     this.source = sourceSets.getByName("main").allJava
-    // Set the classpath for Javadoc. This configuration is standard and should pick up
-    // necessary dependencies for Javadoc to understand types used in your code.
-    this.classpath = files(sourceSets.getByName("main").compileClasspath, sourceSets.getByName("main").output)
 
+    // Explicitly set the Javadoc classpath to include compile-time dependencies
+    // and the output of the main source set.
+    // Also include 'compileOnly' dependencies for things like javax.annotation-api.
+    this.classpath = files(
+        sourceSets.getByName("main").compileClasspath,
+        sourceSets.getByName("main").output,
+        configurations.getByName("compileOnly") // Use configurations.getByName
+    )
 
-    // Set the destination directory directly on the Javadoc task object.
-    // This ensures Javadoc output goes to src/main/resources/static/apidocs,
-    // which Spring Boot can then serve from the packaged JAR.
     this.setDestinationDir(project.file("${project.projectDir}/src/main/resources/static/apidocs"))
 
-    // Configure options for the Javadoc tool
     this.options {
-        // 'this' inside this options block refers to JavadocOptions
-        // Cast to StandardJavadocDocletOptions to access specific methods/properties
         (this as StandardJavadocDocletOptions).apply {
-            // Include members down to 'private' level if they have Javadoc comments
-            memberLevel = JavadocMemberLevel.PRIVATE // Or PROTECTED, PUBLIC as needed
+            memberLevel = JavadocMemberLevel.PRIVATE
+            encoding = "UTF-8" // Specify encoding
+            docEncoding = "UTF-8"
+            charSet = "UTF-8"
 
-            // Link to external Javadoc, like the Java SE API, for standard Java types
-            links = listOf("https.docs.oracle.com/en/java/javase/17/docs/api/")
-            // Add more links if needed:
-            // links?.add("https://docs.spring.io/spring-framework/docs/current/javadoc-api/")
-            // links?.add("https://javadoc.io/doc/io.jsonwebtoken/jjwt-api/latest/")
+            // Temporarily comment out the 'links' option to avoid the file reading error on Render
+            // If external links are crucial and this still fails, -linkoffline might be needed.
+            // links = listOf("https://docs.oracle.com/en/java/javase/17/docs/api/")
 
-            // Other useful options:
-            // windowTitle = "${project.name} ${project.version} API Documentation"
-            // docTitle = "<h1>${project.name} ${project.version} API</h1>"
-            // setAuthor(true)
-            // setVersion(true)
-
-            // Suppress the "unknown enum constant When.MAYBE" warning if it persists
-            // and is not critical. This is a workaround if the classpath isn't picking it up.
-            addStringOption("Xdoclint:none", "-quiet") // Suppress all warnings
-
-            // Alternatively, for more specific control:
-            // addBooleanOption("failOnWarnings", false)
+            // Suppress many doclint warnings to avoid build failures on minor issues
+            // Consider being more specific if possible: -Xdoclint:all,-missing
+            addStringOption("Xdoclint:none", "-quiet")
         }
     }
-
-    // Optional: Fail the build on Javadoc errors (currently true by default for errors)
-    // this.isFailOnError = true
-
-    // The problematic line has been replaced with the options above
-    // this.isFailOnWarning = false // This line has been removed
+    // Javadoc task fails on errors by default.
+    // To prevent failure on warnings (if any remain problematic after Xdoclint:none):
+    // (this as org.gradle.api.tasks.AbstractExecTask<*>).ignoreExitValue = true
+    // However, the current error is an "error", not a "warning", so this wouldn't help for that.
+    // The `failOnError` property is true by default.
 }
 
 // Kotlin compilation options
