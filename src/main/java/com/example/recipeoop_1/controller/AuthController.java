@@ -25,16 +25,24 @@ import org.springframework.web.bind.annotation.RestController;
  * </p>
  *
  * @author Your Name/Team Name
- * @version 1.1
- * @since 2025-05-14
+ * @version 1.2
+ * @since 2025-05-17
  */
 @RestController
 @RequestMapping("/api/auth")
-// @Tag(name = "Authentication", description = "Authentication API") // Swagger annotation removed
 public class AuthController {
 
+    /**
+     * Manages the authentication process.
+     */
     private final AuthenticationManager authenticationManager;
+    /**
+     * Utility for JWT token operations.
+     */
     private final JwtTokenUtil jwtTokenUtil;
+    /**
+     * Service for loading user-specific data.
+     */
     private final UserDetailsService userDetailsService;
 
     /**
@@ -96,11 +104,9 @@ public class AuthController {
      * @see UserDetailsService#loadUserByUsername(String)
      * @see AuthenticationManager#authenticate(org.springframework.security.core.Authentication)
      */
-    // @Operation(summary = "Authenticate user and get JWT token") // Swagger annotation removed
     @PostMapping("/login")
     public ResponseEntity<?> createAuthenticationToken(@RequestBody JwtRequest authenticationRequest) {
         try {
-            // Authenticate the user
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             authenticationRequest.getUsername(),
@@ -108,42 +114,37 @@ public class AuthController {
                     )
             );
 
-            // Get user details for token generation
             final UserDetails userDetails = userDetailsService
                     .loadUserByUsername(authenticationRequest.getUsername());
 
-            // Generate token
             final String token = jwtTokenUtil.generateToken(userDetails);
 
             return ResponseEntity.ok(new JwtResponse(token));
         } catch (DisabledException e) {
-            // User account is disabled
             return ResponseEntity.status(401).body("User is disabled");
         } catch (BadCredentialsException e) {
-            // Invalid username or password
             return ResponseEntity.status(401).body("Invalid credentials");
         } catch (Exception e) {
-            // Log the exception for server-side analysis
-            // In a production environment, avoid sending detailed stack traces to the client
-            e.printStackTrace(); // Consider replacing with structured logging
+            e.printStackTrace();
             return ResponseEntity.status(500).body("Authentication error: " + e.getMessage());
         }
     }
 
     /**
      * Represents the request body for JWT authentication.
-     * <p>
-     * This class is used to deserialize the JSON payload containing the username and password
-     * submitted by the user during the login process.
-     * </p>
      */
     public static class JwtRequest {
+        /**
+         * The username for authentication.
+         */
         private String username;
+        /**
+         * The password for authentication.
+         */
         private String password;
 
         /**
          * Default constructor for {@link JwtRequest}.
-         * Required for JSON deserialization.
          */
         public JwtRequest() {
         }
@@ -161,7 +162,6 @@ public class AuthController {
 
         /**
          * Gets the username from the authentication request.
-         *
          * @return The username.
          */
         public String getUsername() {
@@ -170,7 +170,6 @@ public class AuthController {
 
         /**
          * Sets the username for the authentication request.
-         *
          * @param username The username to set.
          */
         public void setUsername(String username) {
@@ -179,7 +178,6 @@ public class AuthController {
 
         /**
          * Gets the password from the authentication request.
-         *
          * @return The password.
          */
         public String getPassword() {
@@ -188,7 +186,6 @@ public class AuthController {
 
         /**
          * Sets the password for the authentication request.
-         *
          * @param password The password to set.
          */
         public void setPassword(String password) {
@@ -198,17 +195,15 @@ public class AuthController {
 
     /**
      * Represents the response body containing the JWT token after successful authentication.
-     * <p>
-     * This class is used to serialize the generated JWT token into a JSON payload
-     * that is sent back to the client.
-     * </p>
      */
     public static class JwtResponse {
+        /**
+         * The JWT token string.
+         */
         private final String jwtToken;
 
         /**
          * Constructs a {@link JwtResponse} with the generated JWT token.
-         *
          * @param jwtToken The JWT token string.
          */
         public JwtResponse(String jwtToken) {
@@ -217,7 +212,6 @@ public class AuthController {
 
         /**
          * Gets the JWT token.
-         *
          * @return The JWT token string.
          */
         public String getToken() {

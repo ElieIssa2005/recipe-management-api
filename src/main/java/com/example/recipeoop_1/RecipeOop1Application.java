@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
-import java.util.InputMismatchException; // For handling invalid numeric input
+// import java.util.InputMismatchException; // Not directly used, can be removed if not needed for other parts
 
 /**
  * Main application class for the Recipe Management System (RecipeOOP_1).
@@ -43,6 +43,9 @@ import java.util.InputMismatchException; // For handling invalid numeric input
 @EnableMongoRepositories // Enables Spring Data MongoDB repositories
 public class RecipeOop1Application {
 
+    /**
+     * Logger for this class.
+     */
     private static final Logger log = LoggerFactory.getLogger(RecipeOop1Application.class);
 
     /**
@@ -88,34 +91,71 @@ public class RecipeOop1Application {
  */
 @Component
 class ConsoleUI implements CommandLineRunner {
+    /**
+     * Logger for the ConsoleUI class.
+     */
     private static final Logger log = LoggerFactory.getLogger(ConsoleUI.class);
+    /**
+     * Service for recipe-related operations.
+     */
     private final RecipeService recipeService;
+    /**
+     * Service for category-related operations.
+     */
     private final CategoryService categoryService;
+    /**
+     * Scanner for reading user input from the console.
+     */
     private final Scanner scanner;
 
+    /**
+     * The password required for accessing admin functionalities in the console UI.
+     * Hardcoded for simplicity in this demonstration UI.
+     * WARNING: This is not secure for any real-world application.
+     */
     private static final String ADMIN_PASSWORD = "1234"; // TODO: Externalize
 
-    // ANSI escape codes for colors (optional, might not work on all consoles)
+    /** ANSI escape code to reset console color. */
     public static final String ANSI_RESET = "\u001B[0m";
+    /** ANSI escape code for cyan color. */
     public static final String ANSI_CYAN = "\u001B[36m";
+    /** ANSI escape code for yellow color. */
     public static final String ANSI_YELLOW = "\u001B[33m";
+    /** ANSI escape code for green color. */
     public static final String ANSI_GREEN = "\u001B[32m";
+    /** ANSI escape code for red color. */
     public static final String ANSI_RED = "\u001B[31m";
+    /** ANSI escape code for blue color. */
     public static final String ANSI_BLUE = "\u001B[34m";
+    /** ANSI escape code for bold text. */
     public static final String ANSI_BOLD = "\u001B[1m";
 
 
+    /**
+     * Constructs a {@code ConsoleUI} with necessary service dependencies.
+     *
+     * @param recipeService The {@link RecipeService} for recipe-related operations.
+     * @param categoryService The {@link CategoryService} for category-related operations.
+     */
     public ConsoleUI(RecipeService recipeService, CategoryService categoryService) {
         this.recipeService = recipeService;
         this.categoryService = categoryService;
         this.scanner = new Scanner(System.in);
     }
 
+    /**
+     * Callback method from {@link CommandLineRunner}.
+     * Intentionally left empty as UI is started via {@link #start()}.
+     * @param args Incoming command-line arguments, not used.
+     */
     @Override
     public void run(String... args) {
         log.debug("ConsoleUI.run() called, but UI is started via start() method.");
     }
 
+    /**
+     * Starts the main loop of the console-based user interface.
+     */
     public void start() {
         displayWelcomeMessage();
         boolean exit = false;
@@ -142,6 +182,9 @@ class ConsoleUI implements CommandLineRunner {
         log.info("Scanner closed.");
     }
 
+    /**
+     * Displays the welcome message to the console.
+     */
     private void displayWelcomeMessage() {
         System.out.println(ANSI_BOLD + ANSI_CYAN);
         System.out.println("***************************************************");
@@ -151,6 +194,9 @@ class ConsoleUI implements CommandLineRunner {
         System.out.println("***************************************************" + ANSI_RESET);
     }
 
+    /**
+     * Displays the main menu options.
+     */
     private void displayMainMenu() {
         System.out.println(ANSI_BOLD + ANSI_BLUE + "\n--- Main Menu ---" + ANSI_RESET);
         System.out.println("1. Login as Client");
@@ -159,6 +205,9 @@ class ConsoleUI implements CommandLineRunner {
         System.out.print(ANSI_YELLOW + "Your choice: " + ANSI_RESET);
     }
 
+    /**
+     * Handles the client user menu and interactions.
+     */
     private void clientMenu() {
         boolean backToMain = false;
         while (!backToMain) {
@@ -204,6 +253,10 @@ class ConsoleUI implements CommandLineRunner {
         }
     }
 
+    /**
+     * Handles the recipe search menu for both clients and admins.
+     * @param userRole The role of the current user ("client" or "admin").
+     */
     private void searchRecipesMenu(String userRole) {
         boolean back = false;
         while (!back) {
@@ -265,6 +318,10 @@ class ConsoleUI implements CommandLineRunner {
         }
     }
 
+    /**
+     * Handles the advanced search menu.
+     * @param userRole The role of the current user.
+     */
     private void advancedSearchMenu(String userRole) {
         System.out.println(ANSI_BOLD + ANSI_BLUE + "\n--- Advanced Search ---" + ANSI_RESET);
         System.out.println("(Leave blank or press Enter to skip a criterion)");
@@ -308,6 +365,12 @@ class ConsoleUI implements CommandLineRunner {
         }
     }
 
+    /**
+     * Displays a list of recipes and allows selection for viewing details or admin actions.
+     * @param listTitle The title for the displayed list.
+     * @param recipes The list of recipes to display.
+     * @param userRole The role of the current user.
+     */
     private void displayRecipeList(String listTitle, List<Recipe> recipes, String userRole) {
         if (recipes == null || recipes.isEmpty()) {
             System.out.println(ANSI_YELLOW + "\nNo recipes to display for: " + listTitle + ANSI_RESET);
@@ -335,7 +398,7 @@ class ConsoleUI implements CommandLineRunner {
                     Recipe selectedRecipe = recipes.get(choice - 1);
                     showRecipeDetails(selectedRecipe);
                     if ("admin".equals(userRole)) {
-                        adminRecipeActionMenu(selectedRecipe); // New menu for admin actions
+                        adminRecipeActionMenu(selectedRecipe);
                     }
                 } else if (choice == recipes.size() + 1) {
                     backToListMenu = true;
@@ -348,6 +411,11 @@ class ConsoleUI implements CommandLineRunner {
         }
     }
 
+    /**
+     * Shows recipes for a given category.
+     * @param category The category name.
+     * @param userRole The role of the current user.
+     */
     private void showRecipesByCategory(String category, String userRole) {
         System.out.println(ANSI_GREEN + "\nFetching recipes in category: " + category + ANSI_RESET);
         try {
@@ -363,6 +431,10 @@ class ConsoleUI implements CommandLineRunner {
         }
     }
 
+    /**
+     * Displays the details of a single recipe.
+     * @param recipe The recipe to display.
+     */
     private void showRecipeDetails(Recipe recipe) {
         if (recipe == null) {
             log.warn("Attempted to show details for a null recipe.");
@@ -385,22 +457,23 @@ class ConsoleUI implements CommandLineRunner {
         System.out.println(ANSI_BOLD + "\nInstructions:" + ANSI_RESET);
         System.out.println(recipe.getInstructions() != null ? recipe.getInstructions() : "No instructions provided.");
 
-        // For admin, actions are handled by adminRecipeActionMenu after this.
+        // For admin, actions are handled by adminRecipeActionMenu.
         // For client, just a pause.
-        if (!"admin".equals(getCurrentUserRoleFromContext())) { // A bit of a hack, better to pass userRole
+        // This check is simplified; in a real app, userRole would be passed or obtained from context.
+        boolean isAdminViewing = false; // Placeholder for actual role check logic
+        if (Thread.currentThread().getStackTrace()[2].getMethodName().contains("admin")) { // very basic check based on call stack
+            isAdminViewing = true;
+        }
+
+        if (!isAdminViewing) {
             System.out.println("\nPress Enter to continue...");
             scanner.nextLine();
         }
     }
-    // Helper to simulate getting role, replace with actual security context access if integrating Spring Security here
-    private String getCurrentUserRoleFromContext() {
-        // This is a placeholder. In a real scenario with Spring Security integrated into ConsoleUI,
-        // you'd get the Authentication object and check roles.
-        // For now, this method is not directly used to gate showRecipeDetails behavior.
-        return "client";
-    }
 
-
+    /**
+     * Handles admin authentication.
+     */
     private void adminAuthentication() {
         System.out.println(ANSI_BOLD + ANSI_BLUE + "\n--- Admin Authentication ---" + ANSI_RESET);
         int attempts = 0;
@@ -430,6 +503,9 @@ class ConsoleUI implements CommandLineRunner {
         }
     }
 
+    /**
+     * Displays the main admin menu.
+     */
     private void adminMenu() {
         System.out.println(ANSI_GREEN+ "\nWelcome, Admin!" + ANSI_RESET);
         boolean backToMain = false;
@@ -437,7 +513,7 @@ class ConsoleUI implements CommandLineRunner {
             System.out.println(ANSI_BOLD + ANSI_BLUE + "\n--- Admin Menu ---" + ANSI_RESET);
             System.out.println("1. Manage Recipes");
             System.out.println("2. Add New Recipe");
-            System.out.println("3. Search Recipes");
+            System.out.println("3. Search Recipes (Global)");
             System.out.println("4. Back to Main Menu");
             System.out.print(ANSI_YELLOW + "Your choice: " + ANSI_RESET);
             String choice = scanner.nextLine().trim();
@@ -461,6 +537,9 @@ class ConsoleUI implements CommandLineRunner {
         }
     }
 
+    /**
+     * Displays the admin's recipe management options (view by category or search).
+     */
     private void adminManageRecipesMenu() {
         boolean backToAdminMenu = false;
         while(!backToAdminMenu) {
@@ -476,7 +555,6 @@ class ConsoleUI implements CommandLineRunner {
                     adminSelectCategoryToViewRecipes();
                     break;
                 case "2":
-                    // This will use the existing search, which then leads to displayRecipeList and adminRecipeActionMenu
                     searchRecipesMenu("admin");
                     break;
                 case "3":
@@ -488,6 +566,9 @@ class ConsoleUI implements CommandLineRunner {
         }
     }
 
+    /**
+     * Allows admin to select a category to view recipes from.
+     */
     private void adminSelectCategoryToViewRecipes() {
         List<String> categories = categoryService.getAllCategories();
         if (categories.isEmpty()) {
@@ -507,9 +588,9 @@ class ConsoleUI implements CommandLineRunner {
             int choice = Integer.parseInt(choiceStr);
             if (choice > 0 && choice <= categories.size()) {
                 String selectedCategory = categories.get(choice - 1);
-                showRecipesByCategory(selectedCategory, "admin"); // This will lead to displayRecipeList
+                showRecipesByCategory(selectedCategory, "admin");
             } else if (choice == categories.size() + 1) {
-                // Do nothing, just go back
+                // Go back
             } else {
                 System.out.println(ANSI_RED + "Invalid selection." + ANSI_RESET);
             }
@@ -518,9 +599,12 @@ class ConsoleUI implements CommandLineRunner {
         }
     }
 
-
+    /**
+     * Displays action menu for a selected recipe for an admin.
+     * @param recipe The recipe to perform actions on.
+     */
     private void adminRecipeActionMenu(Recipe recipe) {
-        if (recipe == null) return; // Should not happen if called correctly
+        if (recipe == null) return;
         boolean backToList = false;
         while (!backToList) {
             System.out.println(ANSI_BOLD + ANSI_BLUE + "\n--- Actions for Recipe: " + recipe.getTitle() + " ---" + ANSI_RESET);
@@ -533,11 +617,11 @@ class ConsoleUI implements CommandLineRunner {
             switch (actionChoice) {
                 case "1":
                     editSelectedRecipe(recipe);
-                    backToList = true; // Assume after edit, we go back to the list
+                    backToList = true;
                     break;
                 case "2":
                     deleteSelectedRecipe(recipe);
-                    backToList = true; // Assume after delete, we go back to the list
+                    backToList = true;
                     break;
                 case "3":
                     backToList = true;
@@ -548,7 +632,9 @@ class ConsoleUI implements CommandLineRunner {
         }
     }
 
-
+    /**
+     * Handles adding a new recipe by an admin.
+     */
     private void addNewRecipe() {
         System.out.println(ANSI_BOLD + ANSI_BLUE + "\n--- Add New Recipe ---" + ANSI_RESET);
         Recipe newRecipe = new Recipe();
@@ -616,7 +702,6 @@ class ConsoleUI implements CommandLineRunner {
         newRecipe.setInstructions(instructions);
 
         try {
-            // In a real secured CLI, you'd get the admin's username from their session/token
             Recipe saved = recipeService.createRecipe(newRecipe, "admin_console");
             log.info("Admin created new recipe: '{}', ID: {}", saved.getTitle(), saved.getId());
             System.out.println(ANSI_GREEN + "Recipe '" + saved.getTitle() + "' saved successfully! ID: " + saved.getId() + ANSI_RESET);
@@ -626,12 +711,15 @@ class ConsoleUI implements CommandLineRunner {
         }
     }
 
-    // Edit a specific, already selected/identified recipe
+    /**
+     * Handles editing a specific, already selected recipe by an admin.
+     * @param recipeToEdit The recipe object to be edited.
+     */
     private void editSelectedRecipe(Recipe recipeToEdit) {
         System.out.println(ANSI_BOLD + ANSI_BLUE + "\n--- Editing Recipe: " + recipeToEdit.getTitle() + " (ID: " + recipeToEdit.getId() + ") ---" + ANSI_RESET);
         System.out.println("(Press Enter to keep current value, type new value to change)");
 
-        Recipe detailsToUpdate = new Recipe(); // Create a new object to hold updates
+        Recipe detailsToUpdate = new Recipe();
 
         System.out.print("New Title [" + recipeToEdit.getTitle() + "]: ");
         String title = scanner.nextLine().trim();
@@ -674,12 +762,12 @@ class ConsoleUI implements CommandLineRunner {
             }
             detailsToUpdate.setIngredients(newIngredientsList);
         } else {
-            detailsToUpdate.setIngredients(new ArrayList<>(recipeToEdit.getIngredients())); // Use a copy
+            detailsToUpdate.setIngredients(new ArrayList<>(recipeToEdit.getIngredients()));
         }
 
         System.out.println("Current Instructions:\n" + recipeToEdit.getInstructions());
         System.out.print("New Instructions (press Enter to keep current, or type new instructions): ");
-        String instructions = scanner.nextLine(); // Don't trim immediately, allow multi-line if needed, though Scanner reads line by line.
+        String instructions = scanner.nextLine();
         detailsToUpdate.setInstructions(instructions.isEmpty() ? recipeToEdit.getInstructions() : instructions.trim());
 
         try {
@@ -695,7 +783,10 @@ class ConsoleUI implements CommandLineRunner {
         }
     }
 
-    // Delete a specific, already selected/identified recipe
+    /**
+     * Handles deleting a specific, already selected recipe by an admin.
+     * @param recipeToDelete The recipe object to be deleted.
+     */
     private void deleteSelectedRecipe(Recipe recipeToDelete) {
         System.out.println(ANSI_YELLOW + "\nAre you sure you want to delete the recipe: '" + recipeToDelete.getTitle() + "' (ID: " + recipeToDelete.getId() + ")? (y/n): " + ANSI_RESET);
         String confirm = scanner.nextLine().trim();
@@ -705,7 +796,7 @@ class ConsoleUI implements CommandLineRunner {
                 recipeService.deleteRecipe(recipeToDelete.getId());
                 log.info("Admin deleted recipe ID {}: '{}'", recipeToDelete.getId(), recipeToDelete.getTitle());
                 System.out.println(ANSI_GREEN + "Recipe '" + recipeToDelete.getTitle() + "' deleted successfully!" + ANSI_RESET);
-            } catch (RecipeNotFoundException e) { // Should not happen if recipe object is valid
+            } catch (RecipeNotFoundException e) {
                 log.warn("Recipe with ID {} not found during delete attempt by admin (should not occur if recipe object was valid).", recipeToDelete.getId());
                 System.err.println(ANSI_RED + e.getMessage() + ANSI_RESET);
             } catch (Exception e) {
@@ -717,9 +808,10 @@ class ConsoleUI implements CommandLineRunner {
         }
     }
 
-    // Kept original edit/delete methods that prompt for selection,
-    // but they might be less used now with the new flow.
-    // Consider refactoring them to use the category/search flow first.
+    /**
+     * General method for admin to edit a recipe by providing its ID.
+     * Guides user to find recipe first if ID is unknown.
+     */
     private void editRecipe() {
         System.out.println(ANSI_BOLD + ANSI_BLUE + "\n--- Edit Recipe (General) ---" + ANSI_RESET);
         System.out.println("To edit a specific recipe, please first find it using 'Manage Recipes' or 'Search Recipes'.");
@@ -731,7 +823,7 @@ class ConsoleUI implements CommandLineRunner {
             return;
         }
         try {
-            Recipe recipeToEdit = recipeService.getRecipeById(idToEdit); // Global search
+            Recipe recipeToEdit = recipeService.getRecipeById(idToEdit);
             editSelectedRecipe(recipeToEdit);
         } catch (RecipeNotFoundException e) {
             System.out.println(ANSI_RED + "Recipe with ID '" + idToEdit + "' not found across all categories." + ANSI_RESET);
@@ -741,7 +833,10 @@ class ConsoleUI implements CommandLineRunner {
         }
     }
 
-
+    /**
+     * General method for admin to delete a recipe by providing its ID.
+     * Guides user to find recipe first if ID is unknown.
+     */
     private void deleteRecipe() {
         System.out.println(ANSI_BOLD + ANSI_BLUE + "\n--- Delete Recipe (General) ---" + ANSI_RESET);
         System.out.println("To delete a specific recipe, please first find it using 'Manage Recipes' or 'Search Recipes'.");
@@ -753,7 +848,7 @@ class ConsoleUI implements CommandLineRunner {
             return;
         }
         try {
-            Recipe recipeToDelete = recipeService.getRecipeById(idToDelete); // Global search
+            Recipe recipeToDelete = recipeService.getRecipeById(idToDelete);
             deleteSelectedRecipe(recipeToDelete);
         } catch (RecipeNotFoundException e) {
             System.out.println(ANSI_RED + "Recipe with ID '" + idToDelete + "' not found across all categories." + ANSI_RESET);
