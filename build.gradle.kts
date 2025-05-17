@@ -48,11 +48,12 @@ tasks.withType<Javadoc>().configureEach {
     val sourceSets = project.extensions.getByType(SourceSetContainer::class.java)
     this.source = sourceSets.getByName("main").allJava
 
-    // Explicitly set the Javadoc classpath
+    // Explicitly set the Javadoc classpath.
+    // The 'main' source set's compileClasspath already includes 'compileOnly' dependencies.
+    // Removed the direct reference to configurations.getByName("compileOnly").
     this.classpath = files(
         sourceSets.getByName("main").compileClasspath,
-        sourceSets.getByName("main").output,
-        configurations.getByName("compileOnly") // Ensure compileOnly dependencies are on classpath
+        sourceSets.getByName("main").output
     )
 
     this.setDestinationDir(project.file("${project.projectDir}/src/main/resources/static/apidocs"))
@@ -65,9 +66,7 @@ tasks.withType<Javadoc>().configureEach {
             charset("UTF-8")
 
             // Ensure the 'links' option is NOT present or is explicitly empty
-            // The line that was here: "links = listOf(...)" has been completely removed.
-            // If you need to explicitly clear it (though usually not necessary if not set):
-            // this.links = null // or this.links = emptyList()
+            // this.links = null // or this.links = emptyList() // if needed
 
             // Suppress all doclint warnings. This is a broad suppression.
             addStringOption("Xdoclint:all,-missing", "-quiet")
