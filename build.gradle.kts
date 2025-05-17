@@ -48,13 +48,11 @@ tasks.withType<Javadoc>().configureEach {
     val sourceSets = project.extensions.getByType(SourceSetContainer::class.java)
     this.source = sourceSets.getByName("main").allJava
 
-    // Explicitly set the Javadoc classpath to include compile-time dependencies
-    // and the output of the main source set.
-    // Also include 'compileOnly' dependencies for things like javax.annotation-api.
+    // Explicitly set the Javadoc classpath
     this.classpath = files(
         sourceSets.getByName("main").compileClasspath,
         sourceSets.getByName("main").output,
-        configurations.getByName("compileOnly") // Use configurations.getByName
+        configurations.getByName("compileOnly") // Ensure compileOnly dependencies are on classpath
     )
 
     this.setDestinationDir(project.file("${project.projectDir}/src/main/resources/static/apidocs"))
@@ -62,24 +60,23 @@ tasks.withType<Javadoc>().configureEach {
     this.options {
         (this as StandardJavadocDocletOptions).apply {
             memberLevel = JavadocMemberLevel.PRIVATE
-            encoding = "UTF-8" // Specify encoding
+            encoding = "UTF-8"
             docEncoding = "UTF-8"
-            charSet = "UTF-8"
+            charset("UTF-8")
 
-            // Temporarily comment out the 'links' option to avoid the file reading error on Render
-            // If external links are crucial and this still fails, -linkoffline might be needed.
-            // links = listOf("https://docs.oracle.com/en/java/javase/17/docs/api/")
+            // Ensure the 'links' option is NOT present or is explicitly empty
+            // The line that was here: "links = listOf(...)" has been completely removed.
+            // If you need to explicitly clear it (though usually not necessary if not set):
+            // this.links = null // or this.links = emptyList()
 
-            // Suppress many doclint warnings to avoid build failures on minor issues
-            // Consider being more specific if possible: -Xdoclint:all,-missing
-            addStringOption("Xdoclint:none", "-quiet")
+            // Suppress all doclint warnings. This is a broad suppression.
+            addStringOption("Xdoclint:all,-missing", "-quiet")
         }
     }
     // Javadoc task fails on errors by default.
-    // To prevent failure on warnings (if any remain problematic after Xdoclint:none):
-    // (this as org.gradle.api.tasks.AbstractExecTask<*>).ignoreExitValue = true
-    // However, the current error is an "error", not a "warning", so this wouldn't help for that.
-    // The `failOnError` property is true by default.
+    // To prevent failure on warnings (if any remain problematic after Xdoclint):
+    // this.failOnError = true // Default
+    // (this as org.gradle.api.tasks.AbstractExecTask<*>).ignoreExitValue = true // If you want to ignore all javadoc errors/warnings for the build to pass
 }
 
 // Kotlin compilation options
