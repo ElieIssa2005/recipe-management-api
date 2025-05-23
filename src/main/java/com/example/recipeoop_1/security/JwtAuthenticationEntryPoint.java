@@ -21,7 +21,7 @@ import java.io.Serializable;
  * It implements {@link Serializable} as it's good practice for components used in a web environment,
  * though not strictly necessary for its function as an entry point.
  *
- * @author Your Name/Team Name
+ * @author Elie Issa/Michel Ghazaly
  * @version 1.0
  * @since 2025-05-14
  * @see AuthenticationEntryPoint

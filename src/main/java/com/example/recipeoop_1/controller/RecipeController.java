@@ -23,7 +23,7 @@ import java.util.List;
  * The base path for these endpoints is {@code /api/recipes}.
  * </p>
  *
- * @author Elie Issa - Michel Ghazaly
+ * @author Elie Issa/Michel Ghazaly
  * @version 1.1
  * @since 2025-05-14
  */

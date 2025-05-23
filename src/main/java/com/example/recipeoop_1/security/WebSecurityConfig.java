@@ -26,7 +26,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  * {@code @PreAuthorize} on controller methods.</li>
  * </ul>
  *
- * @author Your Name/Team Name
+ * @author Elie Issa/Michel Ghazaly
  * @version 1.1
  * @since 2025-05-14
  * @see HttpSecurity

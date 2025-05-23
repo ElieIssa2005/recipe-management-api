@@ -27,7 +27,7 @@ import java.util.List;
  * becomes empty, it is also deleted (unless it's "uncategorized").
  * </p>
  *
- * @author Your Name/Team Name (Original authors: Elie Issa - Michel Ghazaly, as per project context)
+ * @author Elie Issa/Michel Ghazaly
  * @version 1.3
  * @since 2025-05-17
  * @see RecipeService

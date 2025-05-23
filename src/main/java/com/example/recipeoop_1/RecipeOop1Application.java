@@ -34,7 +34,7 @@ import java.util.Scanner;
  * is not running with the "prod" (production) Spring profile active.
  * </p>
  *
- * @author Elie Issa - Michel Ghazaly (Original Authors), Your Name/Team Name (Maintainers)
+ * @author Elie Issa/Michel Ghazaly
  * @version 1.3
  * @since 2025-05-17
  */

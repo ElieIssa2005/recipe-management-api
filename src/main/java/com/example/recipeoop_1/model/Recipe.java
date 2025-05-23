@@ -16,7 +16,7 @@ import java.util.ArrayList;
  * category, and the user who created it.
  * </p>
  *
- * @author Your Name/Team Name (Original authors: Elie Issa - Michel Ghazaly, as per previous files)
+ * @author Elie Issa/Michel Ghazaly
  * @version 1.1
  * @since 2025-05-14
  */

@@ -26,7 +26,7 @@ import java.util.Map;
  * It ensures that API clients receive consistent and informative error responses in a JSON format.
  * </p>
  *
- * @author Your Name/Team Name
+ * @author Elie Issa/Michel Ghazaly
  * @version 1.0
  * @since 2025-05-14
  * @see ControllerAdvice

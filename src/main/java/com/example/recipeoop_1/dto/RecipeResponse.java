@@ -14,7 +14,7 @@ import java.util.List;
  * total elements, and total pages.
  * </p>
  *
- * @author Your Name/Team Name
+ * @author Elie Issa/Michel Ghazaly
  * @version 1.0
  * @since 2025-05-14
  * @see com.example.recipeoop_1.model.Recipe

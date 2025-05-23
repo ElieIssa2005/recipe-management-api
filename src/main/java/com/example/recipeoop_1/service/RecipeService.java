@@ -14,7 +14,7 @@ import java.util.List;
  * data repositories and other services like {@link CategoryService}.
  * </p>
  *
- * @author Your Name/Team Name
+ * @author Elie Issa/Michel Ghazaly
  * @version 1.0
  * @since 2025-05-14
  * @see Recipe

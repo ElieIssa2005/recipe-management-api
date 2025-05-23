@@ -13,7 +13,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * This is particularly useful when the frontend and backend are served from different domains.
  * </p>
  *
- * @author Your Name/Team Name
+ * @author Elie Issa/Michel Ghazaly
  * @version 1.0
  * @since 2025-05-14
  */

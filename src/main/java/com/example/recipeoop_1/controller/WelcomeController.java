@@ -14,7 +14,7 @@ import java.util.Map;
  * and a welcome message.
  * </p>
  *
- * @author Your Name/Team Name
+ * @author Elie Issa/Michel Ghazaly
  * @version 1.1
  * @since 2025-05-14
  */

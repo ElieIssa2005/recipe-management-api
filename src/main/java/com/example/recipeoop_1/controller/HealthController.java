@@ -14,7 +14,7 @@ import java.util.Map;
  * It's a common practice for monitoring and ensuring the application is running correctly.
  * </p>
  *
- * @author Your Name/Team Name
+ * @author Elie Issa/Michel Ghazaly
  * @version 1.0
  * @since 2025-05-14
  */

@@ -14,7 +14,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
  * and authentication management that are used throughout the application.
  * </p>
  *
- * @author Your Name/Team Name
+ * @author Elie Issa/Michel Ghazaly
  * @version 1.0
  * @since 2025-05-14
  */

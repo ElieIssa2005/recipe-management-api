@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
  * might not be hit as expected or might be redundant.
  * </p>
  *
- * @author Your Name/Team Name
+ * @author Elie Issa/Michel Ghazaly
  * @version 1.0
  * @since 2025-05-14
  */

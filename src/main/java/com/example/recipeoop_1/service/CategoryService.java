@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
  * "recipe_main_course") is managed here.
  * </p>
  *
- * @author Your Name/Team Name
+ * @author Elie Issa/Michel Ghazaly
  * @version 1.2
  * @since 2025-05-14
  * @see MongoTemplate

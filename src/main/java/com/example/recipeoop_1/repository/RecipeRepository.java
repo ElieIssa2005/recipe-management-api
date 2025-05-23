@@ -28,7 +28,7 @@ import java.util.List;
  * that match the query criteria.
  * </p>
  *
- * @author Your Name/Team Name
+ * @author Elie Issa/Michel Ghazaly
  * @version 1.0
  * @since 2025-05-14
  * @see MongoRepository

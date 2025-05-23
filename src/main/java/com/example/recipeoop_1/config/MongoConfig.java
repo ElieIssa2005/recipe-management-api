@@ -17,7 +17,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
  * from application properties and sets the default database name.
  * </p>
  *
- * @author Your Name/Team Name
+ * @author Elie Issa/Michel Ghazaly
  * @version 1.0
  * @since 2025-05-14
  * @see AbstractMongoClientConfiguration

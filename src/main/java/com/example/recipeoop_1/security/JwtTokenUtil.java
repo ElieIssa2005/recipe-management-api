@@ -25,7 +25,7 @@ import java.util.function.Function;
  * It implements {@link Serializable} as it's a common practice for components,
  * though not strictly required for its core JWT utility functions.
  *
- * @author Your Name/Team Name
+ * @author Elie Issa/Michel Ghazaly
  * @version 1.0
  * @since 2025-05-14
  * @see Component

@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
  * The base path for authentication endpoints is {@code /api/auth}.
  * </p>
  *
- * @author Your Name/Team Name
+ * @author Elie Issa/Michel Ghazaly
  * @version 1.2
  * @since 2025-05-17
  */

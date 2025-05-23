@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
  * {@code @ControllerAdvice} class (like {@link GlobalExceptionHandler}).
  * </p>
  *
- * @author Your Name/Team Name
+ * @author Elie Issa/Michel Ghazaly
  * @version 1.0
  * @since 2025-05-14
  * @see GlobalExceptionHandler#handleRecipeNotFoundException(RecipeNotFoundException, org.springframework.web.context.request.WebRequest)

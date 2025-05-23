@@ -27,7 +27,7 @@ import java.util.Map;
  * </p>
  * The bean is named "jwtUserDetailsService" and can be injected using this qualifier.
  *
- * @author Your Name/Team Name
+ * @author Elie Issa/Michel Ghazaly
  * @version 1.2
  * @since 2025-05-14
  * @see UserDetailsService

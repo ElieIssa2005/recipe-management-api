@@ -28,7 +28,7 @@ import java.io.IOException;
  * (e.g., secured controller methods) to access the authenticated user's details.
  * </p>
  *
- * @author Your Name/Team Name
+ * @author Elie Issa/Michel Ghazaly
  * @version 1.0
  * @since 2025-05-14
  * @see OncePerRequestFilter
@@ -81,7 +81,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         // Paths to exclude from JWT filtering
         return path.startsWith("/api/auth/") ||         // Authentication endpoint
-                path.startsWith("/swagger-ui/") ||     // Swagger UI (Consider removal if Swagger is deprecated)
+                path.startsWith("/swagger-ui/") ||     // Swagger UI (Consider removal)
                 path.startsWith("/api-docs/") ||       // Swagger API docs (Consider removal)
                 path.startsWith("/v3/api-docs/");    // Swagger API docs v3 (Consider removal)
     }
